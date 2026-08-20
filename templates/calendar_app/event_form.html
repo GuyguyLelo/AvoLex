@@ -1,0 +1,29 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% if event %}{% translate "Modifier l'événement" %}{% else %}{% translate "Nouvel événement" %}{% endif %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% if event %}{% translate "Modifier l'événement" %}{% else %}{% translate "Nouvel événement" %}{% endif %}</h1>
+  </div>
+</header>
+
+<form method="post" class="card" novalidate style="max-width: 40rem;">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  {% for field in form %}
+  <div class="form-field">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}
+    {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+  </div>
+  {% endfor %}
+  <div class="cluster">
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+    <a class="btn btn-secondary" href="{% url 'calendar:list' %}">{% translate "Annuler" %}</a>
+  </div>
+</form>
+{% endblock %}

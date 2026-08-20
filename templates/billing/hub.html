@@ -1,0 +1,112 @@
+{% extends "layouts/app.html" %}
+{% load i18n static money %}
+
+{% block title %}{% translate "Facturation" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/billing.css' %}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% translate "Facturation" %}</h1>
+    <p class="page-lede">{% translate "Temps, débours et factures du cabinet." %}</p>
+  </div>
+  <div class="cluster">
+    <a class="btn btn-secondary" href="{% url 'billing:time_create' %}">{% translate "Saisir du temps" %}</a>
+    <a class="btn btn-secondary" href="{% url 'billing:expense_create' %}">{% translate "Débours" %}</a>
+    <a class="btn btn-primary" href="{% url 'billing:invoice_create' %}">{% translate "Nouvelle facture" %}</a>
+  </div>
+</header>
+
+<section class="card" style="margin-bottom: var(--space-6);">
+  <header class="card-header">
+    <h2 class="card-title">{% translate "Timer" %}</h2>
+  </header>
+  {% if running_timer %}
+  <p>
+    {% translate "En cours" %} :
+    <strong>{{ running_timer.matter.reference }}</strong> — {{ running_timer.description }}
+    <span class="text-muted">({{ running_timer.started_at|date:"H:i" }})</span>
+  </p>
+  <form method="post" action="{% url 'billing:timer_stop' running_timer.pk %}">
+    {% csrf_token %}
+    <button class="btn btn-primary" type="submit">{% translate "Arrêter" %}</button>
+  </form>
+  {% else %}
+  <form method="post" action="{% url 'billing:timer_start' %}">
+    {% csrf_token %}
+    {% for field in timer_form %}
+    <div class="form-field">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+    </div>
+    {% endfor %}
+    <button class="btn btn-primary" type="submit">{% translate "Démarrer" %}</button>
+  </form>
+  {% endif %}
+</section>
+
+<div class="hub-columns">
+  <section class="card">
+    <header class="card-header">
+      <h2 class="card-title">{% translate "Temps récents" %}</h2>
+      <a class="card-header-link" href="{% url 'billing:time_list' %}">{% translate "Tout voir" %}</a>
+    </header>
+    {% if recent_times %}
+    <ul class="task-list hub-feed">
+      {% for t in recent_times %}
+      <li>
+        <a class="list-entity" href="{% url 'matters:detail' t.matter.pk %}">
+          <span class="avatar avatar-event" aria-hidden="true">{{ t.duration_minutes }}</span>
+          <span class="list-entity-text">
+            <span class="list-entity-title">{{ t.description }}</span>
+            <span class="list-entity-meta">
+              <span class="list-ref">{{ t.matter.reference }}</span>
+              · {{ t.duration_minutes }} min
+              {% if t.is_running %} · {% translate "En cours" %}{% elif t.invoice %} · {{ t.invoice.number|default:_("Brouillon") }}{% endif %}
+            </span>
+          </span>
+        </a>
+        <span class="hub-feed-side">
+          <strong class="hub-feed-amount">{{ t.amount|money }}</strong>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">{% translate "Aucune saisie." %}</p>
+    {% endif %}
+  </section>
+  <section class="card">
+    <header class="card-header">
+      <h2 class="card-title">{% translate "Factures récentes" %}</h2>
+      <a class="card-header-link" href="{% url 'billing:invoice_list' %}">{% translate "Tout voir" %}</a>
+    </header>
+    {% if recent_invoices %}
+    <ul class="task-list hub-feed">
+      {% for inv in recent_invoices %}
+      <li>
+        <a class="list-entity" href="{% url 'billing:invoice_detail' inv.pk %}">
+          <span class="avatar" aria-hidden="true">F</span>
+          <span class="list-entity-text">
+            <span class="list-entity-title list-ref">{{ inv.number|default:_("Brouillon") }}</span>
+            <span class="list-entity-meta">{{ inv.client.display_name }}</span>
+          </span>
+        </a>
+        <span class="hub-feed-side">
+          <span class="badge {% if inv.status == 'paid' %}badge-success{% elif inv.status == 'overdue' %}badge-danger{% elif inv.status == 'sent' %}badge-info{% elif inv.status == 'cancelled' %}badge-warning{% else %}badge-gold{% endif %}">
+            {{ inv.get_status_display }}
+          </span>
+          <strong class="hub-feed-amount">{{ inv.total|money }}</strong>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">{% translate "Aucune facture." %}</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

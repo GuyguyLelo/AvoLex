@@ -1,0 +1,140 @@
+{% extends "layouts/app.html" %}
+{% load i18n money static %}
+
+{% block title %}{{ invoice.number|default:_("Brouillon") }} — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/billing.css' %}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{{ invoice.number|default:_("Facture brouillon") }}</h1>
+    <p class="page-lede">
+      {{ invoice.client.display_name }}
+      · <span class="badge badge-info">{{ invoice.get_status_display }}</span>
+    </p>
+  </div>
+  <div class="cluster">
+    {% if invoice.status == "draft" %}
+    <form method="post" action="{% url 'billing:invoice_issue' invoice.pk %}">
+      {% csrf_token %}
+      <button class="btn btn-primary" type="submit">{% translate "Émettre" %}</button>
+    </form>
+    <a class="btn btn-secondary" href="{% url 'billing:invoice_pdf' invoice.pk %}">{% translate "Aperçu PDF" %}</a>
+    {% else %}
+    <a class="btn btn-primary" href="{% url 'billing:invoice_pdf' invoice.pk %}">{% translate "Télécharger le PDF" %}</a>
+    {% endif %}
+    {% if invoice.status == "sent" or invoice.status == "overdue" %}
+    <form method="post" action="{% url 'billing:invoice_paid' invoice.pk %}">
+      {% csrf_token %}
+      <button class="btn btn-secondary" type="submit">{% translate "Marquer payée" %}</button>
+    </form>
+    {% endif %}
+    {% if invoice.status == "sent" %}
+    <form method="post" action="{% url 'billing:invoice_overdue' invoice.pk %}">
+      {% csrf_token %}
+      <button class="btn btn-ghost" type="submit">{% translate "Marquer impayée" %}</button>
+    </form>
+    {% endif %}
+  </div>
+</header>
+
+<section class="invoice-sheet">
+  <div class="invoice-summary">
+    <div class="invoice-parties">
+      <div class="invoice-party">
+        <p class="invoice-party-label">{% translate "Client" %}</p>
+        <a class="list-entity" href="{% url 'clients:detail' invoice.client_id %}">
+          <span class="avatar" aria-hidden="true">{{ invoice.client.display_name|slice:":1" }}</span>
+          <span class="list-entity-text">
+            <span class="list-entity-title">{{ invoice.client.display_name }}</span>
+          </span>
+        </a>
+      </div>
+      {% if invoice.matter %}
+      <div class="invoice-party">
+        <p class="invoice-party-label">{% translate "Dossier" %}</p>
+        <a class="list-entity" href="{% url 'matters:detail' invoice.matter.pk %}">
+          <span class="avatar" aria-hidden="true">{{ invoice.matter.reference|slice:"-2:" }}</span>
+          <span class="list-entity-text">
+            <span class="list-entity-title list-ref">{{ invoice.matter.reference }}</span>
+            <span class="list-entity-meta">{{ invoice.matter.title }}</span>
+          </span>
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <aside class="invoice-totals" aria-label="{% translate 'Totaux' %}">
+      <div class="invoice-totals-row">
+        <span>{% translate "Total HT" %}</span>
+        <b>{{ invoice.subtotal|money }}</b>
+      </div>
+      <div class="invoice-totals-row">
+        <span>{% translate "TVA" %} ({{ invoice.tax_rate|floatformat:"-2" }}&nbsp;%)</span>
+        <b>{{ invoice.tax_amount|money }}</b>
+      </div>
+      <div class="invoice-totals-row is-grand">
+        <span>{% translate "Total TTC" %}</span>
+        <b>{{ invoice.total|money }}</b>
+      </div>
+    </aside>
+  </div>
+
+  <div class="invoice-lines">
+    <header class="invoice-lines-head">
+      <p class="invoice-party-label">{% translate "Lignes" %}</p>
+      <p class="invoice-lines-count">{{ invoice.lines.all|length }} {% translate "prestation(s)" %}</p>
+    </header>
+    {% if invoice.lines.all %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Description" %}</th>
+            <th class="num">{% translate "Qté" %}</th>
+            <th class="num">{% translate "P.U. HT" %}</th>
+            <th class="num">{% translate "Montant" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for line in invoice.lines.all %}
+          <tr>
+            <td>
+              <span class="list-entity">
+                {% if line.kind == "expense" %}
+                <span class="avatar avatar-company" aria-hidden="true">$</span>
+                {% else %}
+                <span class="avatar" aria-hidden="true">{{ line.description|slice:":1" }}</span>
+                {% endif %}
+                <span class="list-entity-text">
+                  <span class="list-entity-title">{{ line.description }}</span>
+                  <span class="list-entity-meta">{{ line.get_kind_display }}</span>
+                </span>
+              </span>
+            </td>
+            <td class="num">
+              <span class="invoice-qty">{{ line.quantity|floatformat:"-2" }}{% if line.kind == "time" %}&nbsp;h{% endif %}</span>
+            </td>
+            <td class="num">{{ line.unit_price|money }}</td>
+            <td class="num invoice-line-amount">{{ line.amount|money }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted">{% translate "Aucune ligne." %}</p>
+    {% endif %}
+  </div>
+</section>
+
+<form method="post" action="{% url 'billing:invoice_cancel' invoice.pk %}" style="margin-top: var(--space-8);" onsubmit="return confirm('OK ?');">
+  {% csrf_token %}
+  <button class="btn btn-danger" type="submit">
+    {% if invoice.status == "draft" %}{% translate "Supprimer le brouillon" %}{% else %}{% translate "Annuler la facture" %}{% endif %}
+  </button>
+</form>
+{% endblock %}

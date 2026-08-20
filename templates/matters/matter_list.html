@@ -1,0 +1,100 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Dossiers" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% translate "Dossiers" %}</h1>
+    <p class="page-lede">{% translate "Affaires du cabinet — recherche et filtres." %}</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'matters:create' %}">{% translate "Nouveau dossier" %}</a>
+</header>
+
+<form class="list-toolbar" method="get" action="{% url 'matters:list' %}">
+  <div class="form-field">
+    <label class="sr-only" for="q">{% translate "Recherche" %}</label>
+    <input class="form-input" id="q" type="search" name="q" value="{{ filter_q }}"
+           placeholder="{% translate 'Référence, titre, client…' %}">
+  </div>
+  <div class="form-field">
+    <label class="sr-only" for="status">{% translate "Statut" %}</label>
+    <select class="form-input" id="status" name="status">
+      <option value="">{% translate "Tous les statuts" %}</option>
+      {% for value, label in status_choices %}
+      <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-field">
+    <label class="sr-only" for="archived">{% translate "Archivage" %}</label>
+    <select class="form-input" id="archived" name="archived">
+      <option value="" {% if not filter_archived %}selected{% endif %}>{% translate "Dossiers actifs" %}</option>
+      <option value="1" {% if filter_archived == "1" %}selected{% endif %}>{% translate "Archivés" %}</option>
+      <option value="all" {% if filter_archived == "all" %}selected{% endif %}>{% translate "Tous" %}</option>
+    </select>
+  </div>
+  <div class="form-field">
+    <label class="sr-only" for="client">{% translate "Client" %}</label>
+    <select class="form-input" id="client" name="client">
+      <option value="">{% translate "Tous les clients" %}</option>
+      {% for c in clients %}
+      <option value="{{ c.pk }}" {% if filter_client == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.display_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-secondary" type="submit">{% translate "Filtrer" %}</button>
+</form>
+
+{% if matters %}
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{% translate "Dossier" %}</th>
+        <th>{% translate "Client" %}</th>
+        <th>{% translate "Matière" %}</th>
+        <th>{% translate "Statut" %}</th>
+        <th>{% translate "Avocat" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in matters %}
+      <tr>
+        <td>
+          <a class="list-entity" href="{% url 'matters:detail' m.pk %}">
+            <span class="avatar" aria-hidden="true">{{ m.reference|slice:"-2:" }}</span>
+            <span class="list-entity-text">
+              <span class="list-entity-title">{{ m.title }}</span>
+              <span class="list-entity-meta list-ref">{{ m.reference }}</span>
+            </span>
+          </a>
+        </td>
+        <td>
+          <a href="{% url 'clients:detail' m.client_id %}">{{ m.client.display_name }}</a>
+        </td>
+        <td>{{ m.practice_area|default:"—" }}</td>
+        <td>
+          <span class="badge {% if m.status == 'open' %}badge-info{% elif m.status == 'in_progress' %}badge-gold{% elif m.status == 'on_hold' %}badge-warning{% elif m.status == 'closed' %}badge-success{% endif %}">
+            {{ m.get_status_display }}
+          </span>
+          {% if m.is_archived %}
+          <span class="badge badge-warning">{% translate "Archivé" %}</span>
+          {% endif %}
+        </td>
+        <td>{{ m.responsible_lawyer.get_full_name|default:m.responsible_lawyer.email }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" %}
+{% else %}
+<section class="empty-state">
+  <h2>{% translate "Aucun dossier" %}</h2>
+  <p>{% translate "Ouvrez un dossier et rattachez-le à un client." %}</p>
+  <a class="btn btn-primary" href="{% url 'matters:create' %}">{% translate "Nouveau dossier" %}</a>
+</section>
+{% endif %}
+{% endblock %}

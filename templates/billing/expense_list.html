@@ -1,0 +1,49 @@
+{% extends "layouts/app.html" %}
+{% load i18n money %}
+
+{% block title %}{% translate "Débours" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div><h1>{% translate "Débours" %}</h1></div>
+  <a class="btn btn-primary" href="{% url 'billing:expense_create' %}">{% translate "Nouveau débours" %}</a>
+</header>
+{% if expenses %}
+<div class="table-wrap">
+  <table class="table" data-sortable>
+    <thead>
+      <tr>
+        <th data-sort-key="desc">{% translate "Débours" %}</th>
+        <th data-sort-key="matter">{% translate "Dossier" %}</th>
+        <th data-sort-key="date">{% translate "Date" %}</th>
+        <th class="num" data-sort-key="amount">{% translate "Montant" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in expenses %}
+      <tr>
+        <td>
+          <span class="list-entity">
+            <span class="avatar avatar-company" aria-hidden="true">$</span>
+            <span class="list-entity-text">
+              <span class="list-entity-title">{{ e.description }}</span>
+              <span class="list-entity-meta">{{ e.incurred_on|date:"d/m/Y" }}</span>
+            </span>
+          </span>
+        </td>
+        <td><span class="list-ref">{{ e.matter.reference }}</span></td>
+        <td>{{ e.incurred_on|date:"d/m/Y" }}</td>
+        <td class="num"><strong>{{ e.amount|money }}</strong></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" %}
+{% else %}
+<section class="empty-state">
+  <h2>{% translate "Aucun débours" %}</h2>
+  <a class="btn btn-primary" href="{% url 'billing:expense_create' %}">{% translate "Ajouter" %}</a>
+</section>
+{% endif %}
+{% endblock %}

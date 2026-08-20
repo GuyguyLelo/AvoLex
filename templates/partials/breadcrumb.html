@@ -1,0 +1,16 @@
+{% load i18n %}
+{% if breadcrumb %}
+<nav class="breadcrumb-nav" aria-label="{% translate "Fil d'Ariane" %}">
+  <ol class="breadcrumb">
+    <li><a href="{% url 'core:home' %}">{% translate "Accueil" %}</a></li>
+    {% for item in breadcrumb %}
+      <li class="breadcrumb-sep" aria-hidden="true">›</li>
+      {% if item.url %}
+        <li><a href="{{ item.url }}">{{ item.label }}</a></li>
+      {% else %}
+        <li><span aria-current="page">{{ item.label }}</span></li>
+      {% endif %}
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}

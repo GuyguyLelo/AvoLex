@@ -1,0 +1,288 @@
+/* AvoLex — formulaires clients (compact / pro) */
+
+.page-header-compact {
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+}
+
+.page-header-compact h1 {
+  font-size: clamp(1.55rem, 3vw, 1.9rem);
+  margin-bottom: var(--space-1);
+}
+
+.page-header-compact .page-lede {
+  font-size: var(--text-sm);
+}
+
+.client-form {
+  max-width: 72rem;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.client-form-panels {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.form-panel {
+  position: relative;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+
+.form-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  background: linear-gradient(180deg, var(--color-brass-500), var(--color-ink-800));
+}
+
+.form-panel-head {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.form-panel-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-ink-900);
+}
+
+.form-grid {
+  display: grid;
+  gap: var(--space-3) var(--space-4);
+  grid-template-columns: 1fr;
+}
+
+.client-form .form-field {
+  margin-bottom: 0;
+  gap: 0.35rem;
+}
+
+.client-form .form-field label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.client-form .form-input,
+.client-form input.form-input,
+.client-form select.form-input,
+.client-form textarea.form-input {
+  min-height: 2.35rem;
+  padding: 0.45rem 0.7rem;
+  font-size: var(--text-sm);
+}
+
+.client-form textarea.form-input {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+.form-field-span {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-1);
+}
+
+@media (min-width: 640px) {
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .client-form-panels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .form-panel-coords,
+  .form-panel-full {
+    grid-column: 1 / -1;
+  }
+
+  /* Identité + Adresse côte à côte : champs empilés dans chaque colonne */
+  .form-panel:not(.form-panel-coords):not(.form-panel-full) .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-panel-address .form-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .form-panel-address .form-field-span {
+    grid-column: 1 / -1;
+  }
+
+  .form-panel-coords .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 18rem));
+  }
+}
+
+/* —— Fiche détail client (éditoriale) —— */
+.client-sheet {
+  max-width: 56rem;
+  padding: var(--space-6) var(--space-6) var(--space-8);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(180deg, #fff 0%, var(--color-paper) 100%);
+  box-shadow: var(--shadow-sm);
+}
+
+.client-sheet-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-ink-900);
+}
+
+.client-sheet-kicker {
+  margin: 0 0 var(--space-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-brass-600);
+}
+
+.client-sheet-title h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  line-height: 1.05;
+}
+
+.client-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.client-sheet-meta {
+  display: grid;
+  gap: var(--space-4) var(--space-6);
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--color-border);
+  grid-template-columns: 1fr;
+}
+
+.client-sheet-meta > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.client-sheet-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.client-sheet-meta a,
+.client-sheet-meta span:not(.client-sheet-label) {
+  font-size: var(--text-sm);
+  color: var(--color-ink-900);
+  font-weight: 500;
+  text-decoration: none;
+  line-height: 1.4;
+}
+
+.client-sheet-meta a:hover {
+  color: var(--color-brass-600);
+}
+
+.client-sheet-notes {
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.client-sheet-notes h2,
+.client-sheet-matters h2 {
+  margin: 0 0 var(--space-3);
+  font-size: 1.35rem;
+}
+
+.client-sheet-notes p {
+  margin: 0;
+  max-width: 42rem;
+  font-size: var(--text-sm);
+  color: var(--color-slate-700);
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+.client-sheet-matters {
+  padding-top: var(--space-5);
+}
+
+.client-sheet-matters-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.client-sheet-matters-head h2 {
+  margin: 0;
+}
+
+.client-matters-table {
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.client-empty-matters {
+  display: grid;
+  place-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.client-empty-matters p {
+  margin: 0;
+}
+
+@media (min-width: 700px) {
+  .client-sheet-meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .client-sheet {
+    padding: var(--space-8) var(--space-10) var(--space-10);
+  }
+}

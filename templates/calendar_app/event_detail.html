@@ -1,0 +1,135 @@
+{% extends "layouts/app.html" %}
+{% load i18n static %}
+
+{% block title %}{{ event.title }} — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/calendar.css' %}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="dash-date">{{ event.starts_at|date:"l j F Y"|capfirst }}</p>
+    <h1>{{ event.title }}</h1>
+    <p class="page-lede">
+      <span class="badge {% if event.event_type == 'hearing' %}badge-danger{% elif event.event_type == 'deadline' %}badge-warning{% elif event.event_type == 'appointment' %}badge-info{% elif event.event_type == 'task' %}badge-gold{% else %}badge-gold{% endif %}">
+        {{ event.get_event_type_display }}
+      </span>
+      {% if event.is_done %}
+      · <span class="badge badge-success">{% translate "Terminé" %}</span>
+      {% endif %}
+    </p>
+  </div>
+  <div class="cluster">
+    {% if event.event_type == 'task' and not event.is_done %}
+    <form method="post" action="{% url 'calendar:event_done' event.pk %}">
+      {% csrf_token %}
+      <button class="btn btn-secondary" type="submit">{% translate "Marquer terminé" %}</button>
+    </form>
+    {% endif %}
+    <a class="btn btn-secondary" href="{% url 'calendar:event_update' event.pk %}">{% translate "Modifier" %}</a>
+    <form method="post" action="{% url 'calendar:event_delete' event.pk %}" onsubmit="return confirm('{% translate "Supprimer cet événement ?" %}');">
+      {% csrf_token %}
+      <button class="btn btn-danger" type="submit">{% translate "Supprimer" %}</button>
+    </form>
+  </div>
+</header>
+
+<section class="card event-info">
+  <header class="card-header">
+    <h2 class="card-title">{% translate "Informations" %}</h2>
+  </header>
+  <dl class="event-facts">
+    <div class="event-fact">
+      <dt>{% translate "Début" %}</dt>
+      <dd class="event-datetime">
+        {% if event.all_day %}
+        <span class="event-fact-value">{{ event.starts_at|date:"d/m/Y" }}</span>
+        <span class="event-fact-empty">{% translate "Journée entière" %}</span>
+        {% else %}
+        <span class="event-fact-value">{{ event.starts_at|date:"d/m/Y" }}</span>
+        <span class="event-fact-value">{{ event.starts_at|date:"H:i" }}</span>
+        {% endif %}
+      </dd>
+    </div>
+    <div class="event-fact">
+      <dt>{% translate "Fin" %}</dt>
+      <dd>
+        {% if event.ends_at %}
+        {% if event.all_day %}
+        <span class="event-fact-value">{{ event.ends_at|date:"d/m/Y" }}</span>
+        {% else %}
+        <span class="event-fact-value">{{ event.ends_at|date:"d/m/Y H:i" }}</span>
+        {% endif %}
+        {% else %}
+        <span class="event-fact-empty">—</span>
+        {% endif %}
+      </dd>
+    </div>
+    <div class="event-fact">
+      <dt>{% translate "Lieu" %}</dt>
+      <dd>
+        {% if event.location %}
+        <span>{{ event.location }}</span>
+        {% else %}
+        <span class="event-fact-empty">—</span>
+        {% endif %}
+      </dd>
+    </div>
+    <div class="event-fact">
+      <dt>{% translate "Dossier" %}</dt>
+      <dd>
+        {% if event.matter %}
+        <a class="list-entity" href="{% url 'matters:detail' event.matter.pk %}">
+          <span class="avatar" aria-hidden="true">{{ event.matter.reference|slice:"-2:" }}</span>
+          <span class="list-entity-text">
+            <span class="list-entity-title list-ref">{{ event.matter.reference }}</span>
+            <span class="list-entity-meta">{{ event.matter.title }}</span>
+          </span>
+        </a>
+        {% else %}
+        <span class="event-fact-empty">—</span>
+        {% endif %}
+      </dd>
+    </div>
+    <div class="event-fact">
+      <dt>{% translate "Assigné à" %}</dt>
+      <dd>
+        {% if event.assigned_to %}
+        <span class="list-entity">
+          <span class="avatar" aria-hidden="true">{{ event.assigned_to.get_full_name|default:event.assigned_to.email|slice:":1" }}</span>
+          <span class="list-entity-text">
+            <span class="list-entity-title">{{ event.assigned_to.get_full_name|default:event.assigned_to.email }}</span>
+            {% if event.assigned_to.get_full_name %}
+            <span class="list-entity-meta">{{ event.assigned_to.email }}</span>
+            {% endif %}
+          </span>
+        </span>
+        {% else %}
+        <span class="event-fact-empty">—</span>
+        {% endif %}
+      </dd>
+    </div>
+    <div class="event-fact">
+      <dt>{% translate "Rappel" %}</dt>
+      <dd>
+        {% if event.remind_at %}
+        <span class="event-fact-value">{{ event.remind_at|date:"d/m/Y H:i" }}</span>
+        {% if event.reminder_sent_at %}
+        <span class="list-entity-meta"> · {% translate "Envoyé le" %} {{ event.reminder_sent_at|date:"d/m/Y H:i" }}</span>
+        {% endif %}
+        {% else %}
+        <span class="event-fact-empty">—</span>
+        {% endif %}
+      </dd>
+    </div>
+    {% if event.description %}
+    <div class="event-fact event-fact--wide">
+      <dt>{% translate "Description" %}</dt>
+      <dd class="event-desc">{{ event.description }}</dd>
+    </div>
+    {% endif %}
+  </dl>
+</section>
+{% endblock %}

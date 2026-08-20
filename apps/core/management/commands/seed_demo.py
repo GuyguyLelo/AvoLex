@@ -1,0 +1,889 @@
+"""Charge des données de démonstration pour un cabinet de test."""
+
+from __future__ import annotations
+
+from datetime import date, timedelta
+from decimal import Decimal
+from io import BytesIO
+from typing import Any
+
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.utils import timezone
+
+from apps.billing.models import InvoiceStatus
+from apps.billing.services import (
+    allocate_invoice_number,
+    create_draft_invoice,
+    create_expense,
+    create_time_entry,
+    mark_invoice_overdue,
+    mark_invoice_paid,
+    render_invoice_pdf_bytes,
+    store_invoice_pdf,
+)
+from apps.calendar_app.models import Event, EventType
+from apps.calendar_app.services import create_event
+from apps.clients.models import Client, ClientType
+from apps.clients.services import create_client
+from apps.documents.models import Document
+from apps.documents.services import create_document_with_file
+from apps.matters.models import Matter, MatterStatus
+from apps.matters.services import create_matter, update_matter
+from apps.tenants.context import cabinet_context
+from apps.tenants.models import Invitation, Membership
+from apps.tenants.roles import Role
+from apps.tenants.services import create_cabinet_with_owner, invite_member
+
+User = get_user_model()
+
+DEMO_PASSWORD = "@12345678"  # noqa: S105 — compte de démo local uniquement
+DEMO_EMAIL = "ngamika@gmail.com"
+DEMO_CABINET_NAME = "ILEO Law Firm"
+DEMO_CABINET_LEGAL_NAME = "ILEO Law Firm"
+
+TEAM: list[dict[str, str]] = [
+    {
+        "email": DEMO_EMAIL,
+        "first_name": "Camille",
+        "last_name": "Dupont",
+        "role": Role.OWNER,
+    },
+    {
+        "email": "avocat@avolex.local",
+        "first_name": "Antoine",
+        "last_name": "Lefèvre",
+        "role": Role.LAWYER,
+    },
+    {
+        "email": "collab@avolex.local",
+        "first_name": "Léa",
+        "last_name": "Bernard",
+        "role": Role.ASSOCIATE,
+    },
+    {
+        "email": "secretariat@avolex.local",
+        "first_name": "Nadia",
+        "last_name": "Morel",
+        "role": Role.SECRETARY,
+    },
+    {
+        "email": "lecture@avolex.local",
+        "first_name": "Marc",
+        "last_name": "Petit",
+        "role": Role.READ_ONLY,
+    },
+]
+
+PERSONS: list[dict[str, Any]] = [
+    {
+        "first_name": "Julie",
+        "last_name": "Martin",
+        "email": "julie.martin@example.com",
+        "phone": "0612345678",
+        "address_line1": "12 rue de la Paix",
+        "postal_code": "75002",
+        "city": "Paris",
+        "birth_date": date(1987, 4, 12),
+        "notes": "Cliente historique. Prudente sur les honoraires.",
+    },
+    {
+        "first_name": "Karim",
+        "last_name": "Benali",
+        "email": "karim.benali@example.com",
+        "phone": "0678451230",
+        "address_line1": "8 boulevard Voltaire",
+        "postal_code": "75011",
+        "city": "Paris",
+        "notes": "Contentieux prud'homal en cours.",
+    },
+    {
+        "first_name": "Sophie",
+        "last_name": "Leroux",
+        "email": "sophie.leroux@example.com",
+        "phone": "0621987744",
+        "address_line1": "3 place Bellecour",
+        "postal_code": "69002",
+        "city": "Lyon",
+        "notes": "Divorce amiable, enfants mineurs.",
+    },
+    {
+        "first_name": "Étienne",
+        "last_name": "Moreau",
+        "email": "etienne.moreau@example.com",
+        "phone": "0611023344",
+        "address_line1": "22 rue Sainte-Catherine",
+        "postal_code": "33000",
+        "city": "Bordeaux",
+        "notes": "Litige voisinage / servitude.",
+    },
+    {
+        "first_name": "Inès",
+        "last_name": "Diallo",
+        "email": "ines.diallo@example.com",
+        "phone": "0788123400",
+        "address_line1": "14 rue de la République",
+        "postal_code": "13001",
+        "city": "Marseille",
+        "notes": "Droit des étrangers — titre de séjour.",
+    },
+    {
+        "first_name": "Paul",
+        "last_name": "Girard",
+        "email": "paul.girard@example.com",
+        "phone": "0644556677",
+        "address_line1": "9 rue des Carmes",
+        "postal_code": "44000",
+        "city": "Nantes",
+        "notes": "Accident de la circulation, expertise en cours.",
+    },
+    {
+        "first_name": "Claire",
+        "last_name": "Rousseau",
+        "email": "claire.rousseau@example.com",
+        "phone": "0699001122",
+        "address_line1": "5 allée de la Forêt",
+        "postal_code": "67000",
+        "city": "Strasbourg",
+        "notes": "Succession familiale, 3 héritiers.",
+    },
+    {
+        "first_name": "Hugo",
+        "last_name": "Petit",
+        "email": "hugo.petit@example.com",
+        "phone": "0655332211",
+        "address_line1": "17 rue Nationale",
+        "postal_code": "59000",
+        "city": "Lille",
+        "notes": "Bail commercial, impayés de loyer.",
+    },
+]
+
+COMPANIES: list[dict[str, Any]] = [
+    {
+        "company_name": "TechNova SAS",
+        "legal_form": "SAS",
+        "siret": "81234567800012",
+        "email": "contact@technova.example",
+        "phone": "0142000000",
+        "address_line1": "45 avenue de l'Opéra",
+        "postal_code": "75002",
+        "city": "Paris",
+        "notes": "Scale-up, 42 salariés. Contentieux fournisseurs.",
+    },
+    {
+        "company_name": "Atelier Lumière SARL",
+        "legal_form": "SARL",
+        "siret": "49876543200021",
+        "email": "juridique@atelier-lumiere.example",
+        "phone": "0478123456",
+        "address_line1": "18 rue de la Martinière",
+        "postal_code": "69001",
+        "city": "Lyon",
+        "notes": "Marque et concurrence déloyale.",
+    },
+    {
+        "company_name": "Nord Logistique SA",
+        "legal_form": "SA",
+        "siret": "32109876500034",
+        "email": "direction@nord-logistique.example",
+        "phone": "0320123456",
+        "address_line1": "Zone industrielle, rue des Entrepôts",
+        "postal_code": "59200",
+        "city": "Tourcoing",
+        "notes": "Contrats de transport et sous-traitance.",
+    },
+    {
+        "company_name": "Maison Bellevue SCI",
+        "legal_form": "SCI",
+        "siret": "55443322100018",
+        "email": "gerance@maison-bellevue.example",
+        "phone": "0556123498",
+        "address_line1": "2 chemin des Vignes",
+        "postal_code": "33000",
+        "city": "Bordeaux",
+        "notes": "Gestion immobilière, 4 lots.",
+    },
+]
+
+
+class Command(BaseCommand):
+    """Crée un cabinet démo avec clients, dossiers, agenda, GED et facturation."""
+
+    help = "Génère des données de test réalistes (cabinet ILEO Law Firm)."
+
+    def handle(self, *args: object, **options: object) -> None:
+        owner = self._ensure_user(
+            email=DEMO_EMAIL,
+            first_name="Camille",
+            last_name="Dupont",
+        )
+        cabinet = self._ensure_cabinet(owner)
+        team = self._ensure_team(cabinet, owner)
+
+        with cabinet_context(cabinet):
+            clients = self._ensure_clients(cabinet, owner)
+            lawyer = team[Role.LAWYER]
+            associate = team[Role.ASSOCIATE]
+            matters = self._ensure_matters(cabinet, owner, lawyer, associate, clients)
+            self._ensure_events(cabinet, owner, lawyer, associate, matters)
+            self._ensure_time_and_expenses(cabinet, owner, lawyer, associate, matters)
+            self._ensure_invoices(cabinet, owner, matters)
+            self._ensure_documents(cabinet, owner, matters)
+            self._ensure_invitation(cabinet, owner)
+
+        self.stdout.write(self.style.SUCCESS("Données de test prêtes."))
+        self.stdout.write(f"  Cabinet   : {cabinet.name}")
+        self.stdout.write("  Comptes (mot de passe identique) :")
+        for member in TEAM:
+            self.stdout.write(f"    {member['email']:28}  {member['role']:12}  {DEMO_PASSWORD}")
+
+    def _ensure_user(self, *, email: str, first_name: str, last_name: str) -> Any:
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "first_name": first_name,
+                "last_name": last_name,
+                "is_active": True,
+            },
+        )
+        user.set_password(DEMO_PASSWORD)
+        user.first_name = first_name
+        user.last_name = last_name
+        user.is_active = True
+        user.save()
+        return user
+
+    def _ensure_cabinet(self, owner: Any) -> Any:
+        membership = (
+            Membership.objects.filter(user=owner, role=Role.OWNER)
+            .select_related("cabinet")
+            .first()
+        )
+        if membership:
+            cabinet = membership.cabinet
+            changed: list[str] = []
+            if cabinet.name != DEMO_CABINET_NAME:
+                cabinet.name = DEMO_CABINET_NAME
+                changed.append("name")
+            if cabinet.legal_name != DEMO_CABINET_LEGAL_NAME:
+                cabinet.legal_name = DEMO_CABINET_LEGAL_NAME
+                changed.append("legal_name")
+            if changed:
+                cabinet.save(update_fields=[*changed, "updated_at"])
+                self.stdout.write(self.style.SUCCESS(f"Cabinet renommé : {cabinet.name}"))
+            else:
+                self.stdout.write(f"Cabinet existant réutilisé : {cabinet.name}")
+            return cabinet
+        cabinet, _membership = create_cabinet_with_owner(
+            owner=owner,
+            name=DEMO_CABINET_NAME,
+            legal_name=DEMO_CABINET_LEGAL_NAME,
+            siret="89012345600017",
+            bar_association="Barreau de Paris",
+            address_line1="24 rue de Rivoli",
+            postal_code="75004",
+            city="Paris",
+        )
+        self.stdout.write(self.style.SUCCESS(f"Cabinet créé : {cabinet.name}"))
+        return cabinet
+
+    def _ensure_team(self, cabinet: Any, owner: Any) -> dict[str, Any]:
+        users: dict[str, Any] = {Role.OWNER: owner}
+        for member in TEAM:
+            user = self._ensure_user(
+                email=member["email"],
+                first_name=member["first_name"],
+                last_name=member["last_name"],
+            )
+            Membership.objects.get_or_create(
+                cabinet=cabinet,
+                user=user,
+                defaults={
+                    "role": member["role"],
+                    "is_active": True,
+                    "created_by": owner,
+                },
+            )
+            users[member["role"]] = user
+        return users
+
+    def _ensure_clients(self, cabinet: Any, owner: Any) -> dict[str, Client]:
+        by_key: dict[str, Client] = {}
+        for data in PERSONS:
+            client = Client.objects.filter(cabinet=cabinet, email=data["email"]).first()
+            if client is None:
+                client = create_client(
+                    cabinet=cabinet,
+                    user=owner,
+                    client_type=ClientType.PERSON,
+                    country="FR",
+                    **data,
+                )
+            by_key[data["email"]] = client
+        for data in COMPANIES:
+            client = Client.objects.filter(cabinet=cabinet, email=data["email"]).first()
+            if client is None:
+                client = create_client(
+                    cabinet=cabinet,
+                    user=owner,
+                    client_type=ClientType.COMPANY,
+                    country="FR",
+                    **data,
+                )
+            by_key[data["email"]] = client
+        self.stdout.write(f"Clients : {len(by_key)}")
+        return by_key
+
+    def _ensure_matters(
+        self,
+        cabinet: Any,
+        owner: Any,
+        lawyer: Any,
+        associate: Any,
+        clients: dict[str, Client],
+    ) -> dict[str, Matter]:
+        specs: list[dict[str, Any]] = [
+            {
+                "title": "Licenciement contesté",
+                "client": clients["julie.martin@example.com"],
+                "lawyer": lawyer,
+                "practice_area": "Droit du travail",
+                "jurisdiction": "Conseil de prud'hommes de Paris",
+                "opposing_party": "SAS Horizon RH",
+                "status": MatterStatus.IN_PROGRESS,
+                "description": "Contestation d'un licenciement pour faute.",
+                "notes": "Pièces RH à relancer.",
+            },
+            {
+                "title": "Contentieux commercial",
+                "client": clients["contact@technova.example"],
+                "lawyer": owner,
+                "practice_area": "Droit commercial",
+                "jurisdiction": "Tribunal de commerce de Paris",
+                "opposing_party": "LogiParts SARL",
+                "status": MatterStatus.OPEN,
+                "description": "Litige fournisseur / client B2B. Factures impayées.",
+            },
+            {
+                "title": "Divorce par consentement mutuel",
+                "client": clients["sophie.leroux@example.com"],
+                "lawyer": lawyer,
+                "practice_area": "Droit de la famille",
+                "jurisdiction": "TJ de Lyon",
+                "opposing_party": "Thomas Leroux",
+                "status": MatterStatus.IN_PROGRESS,
+                "description": "Convention de divorce, résidence des enfants.",
+            },
+            {
+                "title": "Servitude de passage",
+                "client": clients["etienne.moreau@example.com"],
+                "lawyer": associate,
+                "practice_area": "Droit immobilier",
+                "jurisdiction": "TJ de Bordeaux",
+                "opposing_party": "Famille Charpentier",
+                "status": MatterStatus.ON_HOLD,
+                "description": "Expertise géomètre en attente.",
+            },
+            {
+                "title": "Titre de séjour — renouvellement",
+                "client": clients["ines.diallo@example.com"],
+                "lawyer": associate,
+                "practice_area": "Droit des étrangers",
+                "jurisdiction": "Préfecture des Bouches-du-Rhône",
+                "status": MatterStatus.OPEN,
+                "description": "Recours gracieux puis contentieux si besoin.",
+            },
+            {
+                "title": "Accident de la circulation",
+                "client": clients["paul.girard@example.com"],
+                "lawyer": lawyer,
+                "practice_area": "Droit du préjudice corporel",
+                "jurisdiction": "TJ de Nantes",
+                "opposing_party": "Assureur AXA",
+                "status": MatterStatus.IN_PROGRESS,
+                "description": "Expertise médicale contradictoire.",
+            },
+            {
+                "title": "Succession Rousseau",
+                "client": clients["claire.rousseau@example.com"],
+                "lawyer": owner,
+                "practice_area": "Droit des successions",
+                "jurisdiction": "Notaire associé — Strasbourg",
+                "status": MatterStatus.CLOSED,
+                "description": "Partage amiable clôturé.",
+                "closed_at": timezone.localdate() - timedelta(days=20),
+            },
+            {
+                "title": "Impayés de loyer commercial",
+                "client": clients["hugo.petit@example.com"],
+                "lawyer": lawyer,
+                "practice_area": "Droit des baux commerciaux",
+                "jurisdiction": "TJ de Lille",
+                "opposing_party": "SARL Café du Nord",
+                "status": MatterStatus.IN_PROGRESS,
+                "description": "Commandement de payer, clause résolutoire.",
+            },
+            {
+                "title": "Concurrence déloyale",
+                "client": clients["juridique@atelier-lumiere.example"],
+                "lawyer": owner,
+                "practice_area": "Propriété intellectuelle",
+                "jurisdiction": "TJ de Lyon",
+                "opposing_party": "Studio Halo",
+                "status": MatterStatus.OPEN,
+                "description": "Imitation de marque et détournement de clientèle.",
+            },
+            {
+                "title": "Contrat-cadre transport",
+                "client": clients["direction@nord-logistique.example"],
+                "lawyer": associate,
+                "practice_area": "Droit des contrats",
+                "jurisdiction": "Tribunal de commerce de Lille",
+                "status": MatterStatus.OPEN,
+                "description": "Négociation et relecture du contrat-cadre 2026.",
+            },
+            {
+                "title": "Licenciement économique",
+                "client": clients["karim.benali@example.com"],
+                "lawyer": lawyer,
+                "practice_area": "Droit du travail",
+                "jurisdiction": "Conseil de prud'hommes de Paris",
+                "opposing_party": "Industrie Métal SAS",
+                "status": MatterStatus.ON_HOLD,
+                "description": "Attente de l'ordonnance de conciliation.",
+            },
+            {
+                "title": "Assemblée générale SCI",
+                "client": clients["gerance@maison-bellevue.example"],
+                "lawyer": owner,
+                "practice_area": "Droit des sociétés",
+                "status": MatterStatus.CLOSED,
+                "description": "PV d'AG et cession de parts.",
+                "closed_at": timezone.localdate() - timedelta(days=45),
+            },
+        ]
+        matters: dict[str, Matter] = {}
+        for spec in specs:
+            existing = Matter.objects.filter(
+                cabinet=cabinet,
+                client=spec["client"],
+                title=spec["title"],
+            ).first()
+            if existing:
+                matters[spec["title"]] = existing
+                continue
+            closed_at = spec.pop("closed_at", None)
+            status = spec.pop("status")
+            client = spec.pop("client")
+            lawyer_user = spec.pop("lawyer")
+            matter = create_matter(
+                cabinet=cabinet,
+                user=owner,
+                client=client,
+                responsible_lawyer=lawyer_user,
+                **spec,
+            )
+            if status != MatterStatus.OPEN or closed_at:
+                update_matter(
+                    matter=matter,
+                    user=owner,
+                    status=status,
+                    closed_at=closed_at,
+                )
+            matters[matter.title] = matter
+        self.stdout.write(f"Dossiers : {len(matters)}")
+        return matters
+
+    def _ensure_events(
+        self,
+        cabinet: Any,
+        owner: Any,
+        lawyer: Any,
+        associate: Any,
+        matters: dict[str, Matter],
+    ) -> None:
+        now = timezone.now()
+        specs: list[dict[str, Any]] = [
+            {
+                "title": "Audience prud'homale",
+                "matter": matters["Licenciement contesté"],
+                "event_type": EventType.HEARING,
+                "starts_at": now + timedelta(days=3, hours=2),
+                "location": "Conseil de prud'hommes de Paris",
+                "assigned_to": lawyer,
+                "remind_at": now + timedelta(days=2),
+            },
+            {
+                "title": "Préparer conclusions",
+                "matter": matters["Licenciement contesté"],
+                "event_type": EventType.TASK,
+                "starts_at": now + timedelta(days=1),
+                "assigned_to": associate,
+            },
+            {
+                "title": "RDV cliente Julie Martin",
+                "matter": matters["Licenciement contesté"],
+                "event_type": EventType.APPOINTMENT,
+                "starts_at": now + timedelta(days=5, hours=4),
+                "ends_at": now + timedelta(days=5, hours=5),
+                "location": "Cabinet — salle 2",
+                "assigned_to": lawyer,
+            },
+            {
+                "title": "Délai conclusions adverse",
+                "matter": matters["Contentieux commercial"],
+                "event_type": EventType.DEADLINE,
+                "starts_at": now + timedelta(days=12),
+                "all_day": True,
+                "assigned_to": owner,
+            },
+            {
+                "title": "Expertise médicale",
+                "matter": matters["Accident de la circulation"],
+                "event_type": EventType.APPOINTMENT,
+                "starts_at": now + timedelta(days=8, hours=3),
+                "location": "Cabinet du Dr. Morel, Nantes",
+                "assigned_to": lawyer,
+            },
+            {
+                "title": "Relancer la préfecture",
+                "matter": matters["Titre de séjour — renouvellement"],
+                "event_type": EventType.TASK,
+                "starts_at": now + timedelta(hours=20),
+                "assigned_to": associate,
+            },
+            {
+                "title": "Audience référé loyers",
+                "matter": matters["Impayés de loyer commercial"],
+                "event_type": EventType.HEARING,
+                "starts_at": now + timedelta(days=15, hours=1),
+                "location": "TJ de Lille",
+                "assigned_to": lawyer,
+            },
+            {
+                "title": "Relire contrat-cadre",
+                "matter": matters["Contrat-cadre transport"],
+                "event_type": EventType.TASK,
+                "starts_at": now - timedelta(days=2),
+                "assigned_to": associate,
+                "is_done": True,
+            },
+            {
+                "title": "Mise en demeure Studio Halo",
+                "matter": matters["Concurrence déloyale"],
+                "event_type": EventType.DEADLINE,
+                "starts_at": now + timedelta(days=6),
+                "assigned_to": owner,
+            },
+            {
+                "title": "Point équipe dossiers ouverts",
+                "matter": None,
+                "event_type": EventType.REMINDER,
+                "starts_at": now + timedelta(days=2, hours=9),
+                "location": "Visio interne",
+                "assigned_to": owner,
+            },
+        ]
+        created = 0
+        for spec in specs:
+            is_done = spec.pop("is_done", False)
+            existing = Event.objects.filter(
+                cabinet=cabinet,
+                title=spec["title"],
+                matter=spec["matter"],
+            ).first()
+            if existing:
+                continue
+            event = create_event(cabinet=cabinet, user=owner, **spec)
+            if is_done:
+                event.is_done = True
+                event.save(update_fields=["is_done", "updated_at"])
+            created += 1
+        self.stdout.write(f"Événements ajoutés : {created}")
+
+    def _ensure_time_and_expenses(
+        self,
+        cabinet: Any,
+        owner: Any,
+        lawyer: Any,
+        associate: Any,
+        matters: dict[str, Matter],
+    ) -> None:
+        from apps.billing.models import Expense, TimeEntry
+
+        time_specs: list[dict[str, Any]] = [
+            {
+                "matter": matters["Licenciement contesté"],
+                "user": lawyer,
+                "description": "Consultation initiale",
+                "duration_minutes": 90,
+                "hourly_rate": Decimal("280.00"),
+            },
+            {
+                "matter": matters["Licenciement contesté"],
+                "user": associate,
+                "description": "Rédaction conclusions",
+                "duration_minutes": 180,
+                "hourly_rate": Decimal("180.00"),
+            },
+            {
+                "matter": matters["Contentieux commercial"],
+                "user": owner,
+                "description": "Analyse du contrat-cadre et factures",
+                "duration_minutes": 120,
+                "hourly_rate": Decimal("320.00"),
+            },
+            {
+                "matter": matters["Divorce par consentement mutuel"],
+                "user": lawyer,
+                "description": "Entretien et projet de convention",
+                "duration_minutes": 75,
+                "hourly_rate": Decimal("250.00"),
+            },
+            {
+                "matter": matters["Accident de la circulation"],
+                "user": lawyer,
+                "description": "Étude du dossier médical",
+                "duration_minutes": 60,
+                "hourly_rate": Decimal("250.00"),
+            },
+            {
+                "matter": matters["Impayés de loyer commercial"],
+                "user": associate,
+                "description": "Commandement de payer",
+                "duration_minutes": 45,
+                "hourly_rate": Decimal("180.00"),
+            },
+            {
+                "matter": matters["Concurrence déloyale"],
+                "user": owner,
+                "description": "Recherche d'antériorités et constats",
+                "duration_minutes": 150,
+                "hourly_rate": Decimal("320.00"),
+            },
+            {
+                "matter": matters["Succession Rousseau"],
+                "user": owner,
+                "description": "Clôture et envoi du décompte",
+                "duration_minutes": 40,
+                "hourly_rate": Decimal("280.00"),
+            },
+        ]
+        added_time = 0
+        for spec in time_specs:
+            if TimeEntry.objects.filter(
+                cabinet=cabinet,
+                matter=spec["matter"],
+                description=spec["description"],
+            ).exists():
+                continue
+            create_time_entry(cabinet=cabinet, **spec)
+            added_time += 1
+
+        expense_specs: list[dict[str, Any]] = [
+            {
+                "matter": matters["Licenciement contesté"],
+                "description": "Frais d'huissier — signification",
+                "amount": Decimal("86.40"),
+                "incurred_on": timezone.localdate() - timedelta(days=12),
+            },
+            {
+                "matter": matters["Contentieux commercial"],
+                "description": "Greffe tribunal de commerce",
+                "amount": Decimal("142.00"),
+                "incurred_on": timezone.localdate() - timedelta(days=5),
+            },
+            {
+                "matter": matters["Accident de la circulation"],
+                "description": "Honoraires expert médical",
+                "amount": Decimal("450.00"),
+                "incurred_on": timezone.localdate() - timedelta(days=8),
+            },
+            {
+                "matter": matters["Concurrence déloyale"],
+                "description": "Constat d'huissier — site web concurrent",
+                "amount": Decimal("320.00"),
+                "incurred_on": timezone.localdate() - timedelta(days=3),
+            },
+        ]
+        added_exp = 0
+        for spec in expense_specs:
+            if Expense.objects.filter(
+                cabinet=cabinet,
+                matter=spec["matter"],
+                description=spec["description"],
+            ).exists():
+                continue
+            create_expense(cabinet=cabinet, user=owner, **spec)
+            added_exp += 1
+        self.stdout.write(f"Temps ajoutés : {added_time} · Débours ajoutés : {added_exp}")
+
+    def _ensure_invoices(
+        self,
+        cabinet: Any,
+        owner: Any,
+        matters: dict[str, Matter],
+    ) -> None:
+        from apps.billing.models import Expense, Invoice, TimeEntry
+
+        plans: list[dict[str, Any]] = [
+            {
+                "matter": matters["Succession Rousseau"],
+                "status": InvoiceStatus.PAID,
+                "notes": "Solde succession — réglé par virement.",
+                "issued_ago": 40,
+                "due_ago": 10,
+            },
+            {
+                "matter": matters["Licenciement contesté"],
+                "status": InvoiceStatus.SENT,
+                "notes": "Provision honoraires + débours huissier.",
+                "issued_ago": 7,
+                "due_ago": -23,
+            },
+            {
+                "matter": matters["Contentieux commercial"],
+                "status": InvoiceStatus.OVERDUE,
+                "notes": "Relance J+15 à envoyer.",
+                "issued_ago": 45,
+                "due_ago": 15,
+            },
+            {
+                "matter": matters["Divorce par consentement mutuel"],
+                "status": InvoiceStatus.DRAFT,
+                "notes": "Brouillon à valider avec la cliente.",
+                "issued_ago": 0,
+                "due_ago": -30,
+            },
+        ]
+        created = 0
+        for plan in plans:
+            matter = plan["matter"]
+            if Invoice.objects.filter(cabinet=cabinet, matter=matter).exists():
+                continue
+            time_ids = list(
+                TimeEntry.objects.filter(
+                    cabinet=cabinet,
+                    matter=matter,
+                    invoice__isnull=True,
+                    is_billable=True,
+                ).values_list("pk", flat=True)
+            )
+            expense_ids = list(
+                Expense.objects.filter(
+                    cabinet=cabinet,
+                    matter=matter,
+                    invoice__isnull=True,
+                    is_billable=True,
+                ).values_list("pk", flat=True)
+            )
+            if not time_ids and not expense_ids:
+                continue
+            invoice = create_draft_invoice(
+                cabinet=cabinet,
+                user=owner,
+                client=matter.client,
+                matter=matter,
+                time_entry_ids=[str(pk) for pk in time_ids],
+                expense_ids=[str(pk) for pk in expense_ids],
+                notes=plan["notes"],
+            )
+            if plan["status"] != InvoiceStatus.DRAFT:
+                self._issue_without_pdf(
+                    invoice=invoice,
+                    user=owner,
+                    status=plan["status"],
+                    issued_ago=plan["issued_ago"],
+                    due_ago=plan["due_ago"],
+                )
+            created += 1
+        self.stdout.write(f"Factures ajoutées : {created}")
+
+    def _issue_without_pdf(
+        self,
+        *,
+        invoice: Any,
+        user: Any,
+        status: str,
+        issued_ago: int,
+        due_ago: int,
+    ) -> None:
+        """Émet une facture sans appeler Celery / WeasyPrint."""
+        with transaction.atomic():
+            invoice.number = allocate_invoice_number(cabinet=invoice.cabinet)
+            invoice.status = InvoiceStatus.SENT
+            invoice.issued_at = timezone.localdate() - timedelta(days=issued_ago)
+            invoice.due_at = timezone.localdate() - timedelta(days=due_ago)
+            invoice.save(
+                update_fields=["number", "status", "issued_at", "due_at", "updated_at"]
+            )
+        invoice.refresh_from_db()
+        if status == InvoiceStatus.PAID:
+            mark_invoice_paid(invoice=invoice, user=user)
+        elif status == InvoiceStatus.OVERDUE:
+            mark_invoice_overdue(invoice=invoice, user=user)
+        store_invoice_pdf(invoice=invoice, pdf_bytes=render_invoice_pdf_bytes(invoice))
+
+    def _ensure_documents(
+        self,
+        cabinet: Any,
+        owner: Any,
+        matters: dict[str, Matter],
+    ) -> None:
+        specs = [
+            (
+                matters["Licenciement contesté"],
+                "Lettre de licenciement",
+                "correspondance, rh",
+                "Madame, Monsieur,\nVeuillez trouver ci-joint la lettre de licenciement.\n",
+            ),
+            (
+                matters["Contentieux commercial"],
+                "Contrat-cadre 2024",
+                "contrat, pièce",
+                "Contrat-cadre de fourniture — version consolidée pour le contentieux.\n",
+            ),
+            (
+                matters["Divorce par consentement mutuel"],
+                "Projet de convention de divorce",
+                "famille, projet",
+                "Projet de convention à faire relire par la cliente avant dépôt.\n",
+            ),
+        ]
+        created = 0
+        for matter, title, tags, body in specs:
+            if Document.objects.filter(cabinet=cabinet, matter=matter, title=title).exists():
+                continue
+            payload = BytesIO(body.encode("utf-8"))
+            create_document_with_file(
+                cabinet=cabinet,
+                matter=matter,
+                user=owner,
+                title=title,
+                uploaded_file=payload,
+                filename=f"{title.lower().replace(' ', '_')}.txt",
+                content_type="text/plain",
+                description="Document de démonstration généré par seed_demo.",
+                tags=[tag.strip() for tag in tags.split(",")],
+            )
+            created += 1
+        self.stdout.write(f"Documents ajoutés : {created}")
+
+    def _ensure_invitation(self, cabinet: Any, owner: Any) -> None:
+        email = "stagiaire@example.com"
+        if Invitation.objects.filter(
+            cabinet=cabinet,
+            email=email,
+            accepted_at__isnull=True,
+            is_deleted=False,
+        ).exists():
+            return
+        invite_member(
+            cabinet=cabinet,
+            email=email,
+            role=Role.ASSOCIATE,
+            invited_by=owner,
+        )
+        self.stdout.write("Invitation en attente : stagiaire@example.com")

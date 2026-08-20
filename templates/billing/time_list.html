@@ -1,0 +1,54 @@
+{% extends "layouts/app.html" %}
+{% load i18n money %}
+
+{% block title %}{% translate "Temps" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% translate "Saisies de temps" %}</h1>
+  </div>
+  <a class="btn btn-primary" href="{% url 'billing:time_create' %}">{% translate "Nouvelle saisie" %}</a>
+</header>
+
+{% if entries %}
+<div class="table-wrap">
+  <table class="table" data-sortable>
+    <thead>
+      <tr>
+        <th data-sort-key="desc">{% translate "Prestation" %}</th>
+        <th data-sort-key="matter">{% translate "Dossier" %}</th>
+        <th class="num" data-sort-key="dur">{% translate "Durée" %}</th>
+        <th class="num" data-sort-key="amount">{% translate "Montant" %}</th>
+        <th data-sort-key="inv">{% translate "Facture" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in entries %}
+      <tr>
+        <td>
+          <span class="list-entity">
+            <span class="avatar" aria-hidden="true">{{ t.description.0 }}</span>
+            <span class="list-entity-text">
+              <span class="list-entity-title">{{ t.description }}</span>
+              <span class="list-entity-meta">{{ t.user.get_full_name|default:t.user.email }}</span>
+            </span>
+          </span>
+        </td>
+        <td><span class="list-ref">{{ t.matter.reference }}</span></td>
+        <td class="num">{{ t.duration_minutes }} min{% if t.is_running %} <span class="badge badge-info">{% translate "timer" %}</span>{% endif %}</td>
+        <td class="num"><strong>{{ t.amount|money }}</strong></td>
+        <td>{% if t.invoice %}<span class="badge badge-gold">{{ t.invoice.number|default:_("Brouillon") }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" %}
+{% else %}
+<section class="empty-state">
+  <h2>{% translate "Aucune saisie" %}</h2>
+  <a class="btn btn-primary" href="{% url 'billing:time_create' %}">{% translate "Saisir du temps" %}</a>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,43 @@
+{% load i18n %}
+<aside class="app-sidebar" data-sidebar id="app-sidebar" aria-label="{% translate 'Navigation cabinet' %}">
+  <a class="app-sidebar-brand" href="{% url 'core:home' %}">
+    <span class="app-sidebar-mark" aria-hidden="true">A</span>
+    <span class="app-sidebar-name">{{ SITE_NAME }}</span>
+  </a>
+
+  <nav class="app-nav" aria-label="{% translate 'Menu principal' %}">
+    <p class="app-nav-section">{% translate "Espace de travail" %}</p>
+    <a class="app-nav-link {% if request.resolver_match.url_name == 'home' %}is-active{% endif %}" href="{% url 'core:home' %}">
+      {% translate "Tableau de bord" %}
+    </a>
+    <a class="app-nav-link {% if request.resolver_match.app_name == 'clients' %}is-active{% endif %}" href="{% url 'clients:list' %}">
+      {% translate "Clients" %}
+    </a>
+    <a class="app-nav-link {% if request.resolver_match.app_name == 'matters' %}is-active{% endif %}" href="{% url 'matters:list' %}">
+      {% translate "Dossiers" %}
+    </a>
+    <a class="app-nav-link {% if request.resolver_match.app_name == 'calendar' %}is-active{% endif %}" href="{% url 'calendar:list' %}">
+      {% translate "Agenda" %}
+    </a>
+    <a class="app-nav-link {% if request.resolver_match.app_name == 'documents' %}is-active{% endif %}" href="{% url 'documents:list' %}">
+      {% translate "Documents" %}
+    </a>
+
+    <p class="app-nav-section">{% translate "Cabinet" %}</p>
+    <a class="app-nav-link {% if request.resolver_match.app_name == 'billing' %}is-active{% endif %}" href="{% url 'billing:hub' %}">
+      {% translate "Facturation" %}
+    </a>
+    <a class="app-nav-link {% if request.resolver_match.app_name == 'tenants' %}is-active{% endif %}" href="{% url 'tenants:invitation_list' %}">
+      {% translate "Équipe & invitations" %}
+    </a>
+  </nav>
+
+  <div class="app-sidebar-footer">
+    {% if current_cabinet %}
+      <p>{{ current_cabinet.name }}</p>
+    {% endif %}
+    {% if current_membership %}
+      <p>{{ current_membership.get_role_display }}</p>
+    {% endif %}
+  </div>
+</aside>

@@ -1,0 +1,38 @@
+{% extends "layouts/app.html" %}
+{% load i18n static %}
+
+{% block title %}{% translate "Téléverser un document" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/documents.css' %}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% translate "Téléverser un document" %}</h1>
+    <p class="page-lede">{% translate "Le fichier est stocké hors webroot et n'est accessible qu'aux membres du cabinet." %}</p>
+  </div>
+</header>
+
+<section class="card" style="max-width: 36rem;">
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    {% for field in form %}
+    <div class="form-field">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}
+      {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <div class="cluster">
+      <button class="btn btn-primary" type="submit">{% translate "Téléverser" %}</button>
+      <a class="btn btn-ghost" href="{% url 'documents:list' %}">{% translate "Annuler" %}</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

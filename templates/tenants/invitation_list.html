@@ -1,0 +1,58 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Invitations" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% translate "Invitations" %}</h1>
+    <p class="page-lede">{% translate "Suivi des invitations envoyées pour ce cabinet." %}</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'tenants:invite' %}">{% translate "Nouvelle invitation" %}</a>
+</header>
+
+{% if invitations %}
+<div class="table-wrap">
+  <table class="table" data-sortable>
+    <thead>
+      <tr>
+        <th data-sort-key="email">{% translate "Invité" %}</th>
+        <th data-sort-key="role">{% translate "Rôle" %}</th>
+        <th data-sort-key="expires">{% translate "Expire" %}</th>
+        <th data-sort-key="status">{% translate "Statut" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inv in invitations %}
+      <tr>
+        <td>
+          <span class="list-entity">
+            <span class="avatar" aria-hidden="true">{{ inv.email.0 }}</span>
+            <span class="list-entity-text">
+              <span class="list-entity-title">{{ inv.email }}</span>
+              <span class="list-entity-meta">{% translate "Invité le" %} {{ inv.created_at|date:"d/m/Y" }}</span>
+            </span>
+          </span>
+        </td>
+        <td><span class="badge">{{ inv.get_role_display }}</span></td>
+        <td>{{ inv.expires_at|date:"d/m/Y H:i" }}</td>
+        <td>
+          {% if inv.is_accepted %}<span class="badge badge-success">{% translate "Acceptée" %}</span>
+          {% elif inv.is_expired %}<span class="badge badge-warning">{% translate "Expirée" %}</span>
+          {% else %}<span class="badge badge-info">{% translate "En attente" %}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" %}
+{% else %}
+<section class="empty-state">
+  <h2>{% translate "Aucune invitation" %}</h2>
+  <p>{% translate "Invitez un collaborateur pour partager l'espace du cabinet." %}</p>
+  <a class="btn btn-primary" href="{% url 'tenants:invite' %}">{% translate "Inviter" %}</a>
+</section>
+{% endif %}
+{% endblock %}

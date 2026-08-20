@@ -1,0 +1,87 @@
+{% extends "layouts/app.html" %}
+{% load i18n static %}
+
+{% block title %}{% translate "Documents" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/documents.css' %}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% translate "Documents" %}</h1>
+    <p class="page-lede">{% translate "GED du cabinet — fichiers hors webroot, accès contrôlé." %}</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'documents:upload' %}">{% translate "Téléverser" %}</a>
+</header>
+
+<form class="list-toolbar" method="get" action="{% url 'documents:list' %}">
+  <div class="form-field">
+    <label class="sr-only" for="filter-q">{% translate "Recherche" %}</label>
+    <input class="form-input" id="filter-q" type="search" name="q" value="{{ filter_q }}" placeholder="{% translate 'Titre…' %}">
+  </div>
+  <div class="form-field">
+    <label class="sr-only" for="filter-matter">{% translate "Dossier" %}</label>
+    <select class="form-input" id="filter-matter" name="matter">
+      <option value="">{% translate "Tous les dossiers" %}</option>
+      {% for m in matters %}
+      <option value="{{ m.id }}" {% if filter_matter == m.id|stringformat:"s" %}selected{% endif %}>
+        {{ m.reference }} — {{ m.title }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-field">
+    <label class="sr-only" for="filter-tag">{% translate "Tag" %}</label>
+    <input class="form-input" id="filter-tag" type="text" name="tag" value="{{ filter_tag }}" placeholder="{% translate 'Tag' %}">
+  </div>
+  <button class="btn btn-secondary" type="submit">{% translate "Filtrer" %}</button>
+</form>
+
+{% if documents %}
+<div class="table-wrap">
+  <table class="table" data-sortable>
+    <thead>
+      <tr>
+        <th data-sort-key="title">{% translate "Document" %}</th>
+        <th data-sort-key="matter">{% translate "Dossier" %}</th>
+        <th data-sort-key="version">{% translate "Version" %}</th>
+        <th data-sort-key="updated">{% translate "Modifié" %}</th>
+        <th>{% translate "Tags" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in documents %}
+      <tr>
+        <td>
+          <a class="list-entity" href="{% url 'documents:detail' doc.pk %}">
+            <span class="avatar avatar-file" aria-hidden="true">{{ doc.title.0 }}</span>
+            <span class="list-entity-text">
+              <span class="list-entity-title">{{ doc.title }}</span>
+              <span class="list-entity-meta">{% if doc.current_version %}v{{ doc.current_version.version_number }} · {% endif %}{{ doc.updated_at|date:"d/m/Y H:i" }}</span>
+            </span>
+          </a>
+        </td>
+        <td><span class="list-ref">{{ doc.matter.reference }}</span></td>
+        <td>{% if doc.current_version %}<span class="badge">v{{ doc.current_version.version_number }}</span>{% else %}—{% endif %}</td>
+        <td>{{ doc.updated_at|date:"d/m/Y H:i" }}</td>
+        <td>
+          {% for tag in doc.tags %}
+          <span class="badge badge-gold">{{ tag }}</span>
+          {% empty %}—{% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" %}
+{% else %}
+<section class="empty-state">
+  <h2>{% translate "Aucun document" %}</h2>
+  <p>{% translate "Téléversez le premier fichier rattaché à un dossier." %}</p>
+  <a class="btn btn-primary" href="{% url 'documents:upload' %}">{% translate "Téléverser" %}</a>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "layouts/auth.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Connexion" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<h1>{% translate "Connexion" %}</h1>
+<p class="auth-lede">{% translate "Accédez à votre espace cabinet (clients, dossiers, documents, facturation)." %}</p>
+<form method="post" action="{% url 'accounts:login' %}" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+  {% for field in form %}
+  <div class="form-field">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+  </div>
+  {% endfor %}
+  {% if redirect_field_value %}
+  <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+  {% endif %}
+  <button class="btn btn-primary btn-block" type="submit">{% translate "Se connecter" %}</button>
+</form>
+<div class="auth-footer-links">
+  <a href="{% url 'accounts:password_reset' %}">{% translate "Mot de passe oublié ?" %}</a>
+  <a href="{% url 'accounts:register' %}">{% translate "Créer un cabinet" %}</a>
+</div>
+{% endblock %}

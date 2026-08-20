@@ -1,0 +1,128 @@
+{% extends "layouts/app.html" %}
+{% load i18n static %}
+
+{% block title %}{{ client.display_name }} — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/clients.css' %}">
+{% endblock %}
+
+{% block content %}
+<article class="client-sheet">
+  <header class="client-sheet-header">
+    <div class="client-sheet-title">
+      <p class="client-sheet-kicker">
+        {{ client.get_client_type_display }}
+        {% if client.city %}<span aria-hidden="true"> · </span>{{ client.city }}{% endif %}
+      </p>
+      <h1>{{ client.display_name }}</h1>
+    </div>
+    <div class="client-sheet-actions">
+      <a class="btn btn-primary btn-sm" href="{% url 'matters:create' %}?client={{ client.pk }}">{% translate "Nouveau dossier" %}</a>
+      <a class="btn btn-secondary btn-sm" href="{% url 'clients:update' client.pk %}">{% translate "Modifier" %}</a>
+      <form method="post" action="{% url 'clients:delete' client.pk %}" onsubmit="return confirm('{% translate "Supprimer ce client ?" %}');">
+        {% csrf_token %}
+        <button class="btn btn-ghost btn-sm" type="submit">{% translate "Supprimer" %}</button>
+      </form>
+    </div>
+  </header>
+
+  <div class="client-sheet-meta">
+    <div>
+      <span class="client-sheet-label">{% translate "E-mail" %}</span>
+      {% if client.email %}<a href="mailto:{{ client.email }}">{{ client.email }}</a>{% else %}<span>—</span>{% endif %}
+    </div>
+    <div>
+      <span class="client-sheet-label">{% translate "Téléphone" %}</span>
+      {% if client.phone %}<a href="tel:{{ client.phone }}">{{ client.phone }}</a>{% else %}<span>—</span>{% endif %}
+    </div>
+    <div>
+      <span class="client-sheet-label">{% translate "Adresse" %}</span>
+      {% if client.address_line1 or client.city %}
+      <span>
+        {% if client.address_line1 %}{{ client.address_line1 }}{% if client.address_line2 %}, {{ client.address_line2 }}{% endif %} · {% endif %}
+        {{ client.postal_code }} {{ client.city }}
+        {% if client.country %} ({{ client.country }}){% endif %}
+      </span>
+      {% else %}
+      <span>—</span>
+      {% endif %}
+    </div>
+    {% if client.client_type == "person" and client.birth_date %}
+    <div>
+      <span class="client-sheet-label">{% translate "Naissance" %}</span>
+      <span>{{ client.birth_date|date:"d/m/Y" }}</span>
+    </div>
+    {% endif %}
+    {% if client.client_type == "company" and client.siret %}
+    <div>
+      <span class="client-sheet-label">{% translate "SIRET" %}</span>
+      <span>{{ client.siret }}</span>
+    </div>
+    {% endif %}
+    {% if client.client_type == "company" and client.legal_form %}
+    <div>
+      <span class="client-sheet-label">{% translate "Forme" %}</span>
+      <span>{{ client.legal_form }}</span>
+    </div>
+    {% endif %}
+    <div>
+      <span class="client-sheet-label">{% translate "Dossiers" %}</span>
+      <span>{{ matters|length }}</span>
+    </div>
+  </div>
+
+  {% if client.notes %}
+  <section class="client-sheet-notes">
+    <h2>{% translate "Notes" %}</h2>
+    <p>{{ client.notes }}</p>
+  </section>
+  {% endif %}
+
+  <section class="client-sheet-matters">
+    <header class="client-sheet-matters-head">
+      <h2>{% translate "Historique des dossiers" %}</h2>
+      <a class="btn btn-secondary btn-sm" href="{% url 'matters:create' %}?client={{ client.pk }}">{% translate "Ajouter" %}</a>
+    </header>
+
+    {% if matters %}
+    <div class="table-wrap client-matters-table">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Référence" %}</th>
+            <th>{% translate "Intitulé" %}</th>
+            <th>{% translate "Statut" %}</th>
+            <th>{% translate "Avocat" %}</th>
+            <th>{% translate "Ouverture" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in matters %}
+          <tr>
+            <td><a href="{% url 'matters:detail' m.pk %}">{{ m.reference }}</a></td>
+            <td>{{ m.title }}</td>
+            <td>
+              <span class="badge {% if m.status == 'closed' %}badge-warning{% elif m.status == 'in_progress' %}badge-info{% else %}badge-gold{% endif %}">
+                {{ m.get_status_display }}
+              </span>
+              {% if m.is_archived %}
+              <span class="badge badge-warning">{% translate "Archivé" %}</span>
+              {% endif %}
+            </td>
+            <td>{{ m.responsible_lawyer.get_full_name|default:m.responsible_lawyer.email }}</td>
+            <td>{{ m.opened_at|date:"d/m/Y"|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="client-empty-matters">
+      <p>{% translate "Aucun dossier pour ce client." %}</p>
+      <a class="btn btn-primary btn-sm" href="{% url 'matters:create' %}?client={{ client.pk }}">{% translate "Ouvrir un dossier" %}</a>
+    </div>
+    {% endif %}
+  </section>
+</article>
+{% endblock %}

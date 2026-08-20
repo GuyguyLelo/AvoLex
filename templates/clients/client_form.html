@@ -1,0 +1,141 @@
+{% extends "layouts/app.html" %}
+{% load i18n static %}
+
+{% block title %}{% if client %}{% translate "Modifier le client" %}{% else %}{% translate "Nouveau client" %}{% endif %} — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/clients.css' %}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header page-header-compact">
+  <div>
+    <h1>{% if client %}{% translate "Modifier le client" %}{% else %}{% translate "Nouveau client" %}{% endif %}</h1>
+    <p class="page-lede">{% translate "Identité, coordonnées et adresse — champs essentiels uniquement." %}</p>
+  </div>
+  <a class="btn btn-ghost btn-sm" href="{% if client %}{% url 'clients:detail' client.pk %}{% else %}{% url 'clients:list' %}{% endif %}">{% translate "Retour" %}</a>
+</header>
+
+<form method="post" class="client-form" novalidate data-client-form>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+  <div class="client-form-panels">
+    <section class="form-panel">
+      <header class="form-panel-head">
+        <h2>{% translate "Identité" %}</h2>
+      </header>
+      <div class="form-grid">
+        <div class="form-field form-field-span">
+          <label for="{{ form.client_type.id_for_label }}">{{ form.client_type.label }}</label>
+          {{ form.client_type }}
+          {% if form.client_type.errors %}<div class="form-error">{{ form.client_type.errors }}</div>{% endif %}
+        </div>
+
+        <div class="form-field" data-person-only>
+          <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<div class="form-error">{{ form.first_name.errors }}</div>{% endif %}
+        </div>
+        <div class="form-field" data-person-only>
+          <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<div class="form-error">{{ form.last_name.errors }}</div>{% endif %}
+        </div>
+        <div class="form-field" data-person-only>
+          <label for="{{ form.birth_date.id_for_label }}">{{ form.birth_date.label }}</label>
+          {{ form.birth_date }}
+          {% if form.birth_date.errors %}<div class="form-error">{{ form.birth_date.errors }}</div>{% endif %}
+        </div>
+
+        <div class="form-field form-field-span" data-company-only hidden>
+          <label for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}</label>
+          {{ form.company_name }}
+          {% if form.company_name.errors %}<div class="form-error">{{ form.company_name.errors }}</div>{% endif %}
+        </div>
+        <div class="form-field" data-company-only hidden>
+          <label for="{{ form.siret.id_for_label }}">{{ form.siret.label }}</label>
+          {{ form.siret }}
+          {% if form.siret.errors %}<div class="form-error">{{ form.siret.errors }}</div>{% endif %}
+        </div>
+        <div class="form-field" data-company-only hidden>
+          <label for="{{ form.legal_form.id_for_label }}">{{ form.legal_form.label }}</label>
+          {{ form.legal_form }}
+          {% if form.legal_form.errors %}<div class="form-error">{{ form.legal_form.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="form-panel form-panel-address">
+      <header class="form-panel-head">
+        <h2>{% translate "Adresse" %}</h2>
+      </header>
+      <div class="form-grid">
+        <div class="form-field form-field-span">
+          <label for="{{ form.address_line1.id_for_label }}">{{ form.address_line1.label }}</label>
+          {{ form.address_line1 }}
+          {% if form.address_line1.errors %}<div class="form-error">{{ form.address_line1.errors }}</div>{% endif %}
+        </div>
+        <div class="form-field form-field-span">
+          <label for="{{ form.address_line2.id_for_label }}">{{ form.address_line2.label }}</label>
+          {{ form.address_line2 }}
+          {% if form.address_line2.errors %}<div class="form-error">{{ form.address_line2.errors }}</div>{% endif %}
+        </div>
+        <div class="form-field">
+          <label for="{{ form.postal_code.id_for_label }}">{{ form.postal_code.label }}</label>
+          {{ form.postal_code }}
+          {% if form.postal_code.errors %}<div class="form-error">{{ form.postal_code.errors }}</div>{% endif %}
+        </div>
+        <div class="form-field">
+          <label for="{{ form.city.id_for_label }}">{{ form.city.label }}</label>
+          {{ form.city }}
+          {% if form.city.errors %}<div class="form-error">{{ form.city.errors }}</div>{% endif %}
+        </div>
+        <div class="form-field">
+          <label for="{{ form.country.id_for_label }}">{{ form.country.label }}</label>
+          {{ form.country }}
+          {% if form.country.errors %}<div class="form-error">{{ form.country.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="form-panel form-panel-coords">
+      <header class="form-panel-head">
+        <h2>{% translate "Coordonnées" %}</h2>
+      </header>
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+          {{ form.email }}
+          {% if form.email.errors %}<div class="form-error">{{ form.email.errors }}</div>{% endif %}
+        </div>
+        <div class="form-field">
+          <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<div class="form-error">{{ form.phone.errors }}</div>{% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="form-panel form-panel-full">
+      <header class="form-panel-head">
+        <h2>{% translate "Notes" %}</h2>
+      </header>
+      <div class="form-field" style="margin-bottom:0;">
+        <label class="sr-only" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+        {{ form.notes }}
+        {% if form.notes.errors %}<div class="form-error">{{ form.notes.errors }}</div>{% endif %}
+      </div>
+    </section>
+  </div>
+
+  <footer class="form-actions">
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+    <a class="btn btn-secondary" href="{% if client %}{% url 'clients:detail' client.pk %}{% else %}{% url 'clients:list' %}{% endif %}">{% translate "Annuler" %}</a>
+  </footer>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="{% static 'js/clients.js' %}"></script>
+{% endblock %}

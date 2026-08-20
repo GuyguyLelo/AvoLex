@@ -1,0 +1,27 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Nouvelle facture" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% translate "Nouvelle facture" %}</h1>
+    <p class="page-lede">{% translate "Sélectionnez les temps et débours non facturés à inclure." %}</p>
+  </div>
+</header>
+<section class="card" style="max-width:40rem;">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+    <div class="form-field">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <button class="btn btn-primary" type="submit">{% translate "Créer le brouillon" %}</button>
+  </form>
+</section>
+{% endblock %}

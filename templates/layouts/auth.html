@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block body_class %}{% endblock %}
+
+{% block body %}
+<div class="auth-shell">
+  <main id="main" class="auth-panel">
+    <a class="auth-brand" href="{% url 'core:landing' %}">
+      <span class="public-brand-mark" aria-hidden="true">A</span>
+      {{ SITE_NAME }}
+    </a>
+    {% include "partials/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

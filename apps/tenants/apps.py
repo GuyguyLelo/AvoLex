@@ -1,0 +1,14 @@
+"""Configuration de l'application tenants."""
+
+from __future__ import annotations
+
+from django.apps import AppConfig
+
+
+class TenantsConfig(AppConfig):
+    """AppConfig pour apps.tenants."""
+
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.tenants"
+    label = "tenants"
+    verbose_name = "Cabinets"

@@ -1,0 +1,69 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Clients" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% translate "Clients" %}</h1>
+    <p class="page-lede">{% translate "Personnes physiques et morales du cabinet." %}</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'clients:create' %}">{% translate "Nouveau client" %}</a>
+</header>
+
+<form class="list-toolbar" method="get" action="{% url 'clients:list' %}">
+  <div class="form-field">
+    <label class="sr-only" for="filter-q">{% translate "Recherche" %}</label>
+    <input class="form-input" id="filter-q" type="search" name="q" value="{{ filter_q }}"
+           placeholder="{% translate 'Nom, e-mail, téléphone, ville…' %}">
+  </div>
+  <button class="btn btn-secondary" type="submit">{% translate "Rechercher" %}</button>
+</form>
+
+{% if clients %}
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{% translate "Client" %}</th>
+        <th>{% translate "Type" %}</th>
+        <th>{% translate "Téléphone" %}</th>
+        <th>{% translate "Ville" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in clients %}
+      <tr>
+        <td>
+          <a class="list-entity" href="{% url 'clients:detail' c.pk %}">
+            <span class="avatar {% if c.client_type == 'company' %}avatar-company{% endif %}" aria-hidden="true">{{ c.display_name.0 }}</span>
+            <span class="list-entity-text">
+              <span class="list-entity-title">{{ c.display_name }}</span>
+              <span class="list-entity-meta">{{ c.email|default:c.phone|default:"—" }}</span>
+            </span>
+          </a>
+        </td>
+        <td>
+          {% if c.client_type == 'company' %}
+          <span class="badge badge-gold">{{ c.get_client_type_display }}</span>
+          {% else %}
+          <span class="badge">{{ c.get_client_type_display }}</span>
+          {% endif %}
+        </td>
+        <td>{{ c.phone|default:"—" }}</td>
+        <td>{{ c.city|default:"—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" %}
+{% else %}
+<section class="empty-state">
+  <h2>{% translate "Aucun client" %}</h2>
+  <p>{% translate "Créez votre premier client pour ouvrir des dossiers." %}</p>
+  <a class="btn btn-primary" href="{% url 'clients:create' %}">{% translate "Nouveau client" %}</a>
+</section>
+{% endif %}
+{% endblock %}

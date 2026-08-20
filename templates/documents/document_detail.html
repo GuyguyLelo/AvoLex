@@ -1,0 +1,108 @@
+{% extends "layouts/app.html" %}
+{% load i18n static %}
+
+{% block title %}{{ document.title }} — {{ SITE_NAME }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/documents.css' %}">
+{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{{ document.title }}</h1>
+    <p class="page-lede">
+      {% translate "Dossier" %} :
+      <strong>{{ document.matter.reference }}</strong> — {{ document.matter.title }}
+    </p>
+  </div>
+  <div class="cluster">
+    {% if document.current_version %}
+    <a class="btn btn-primary" href="{% url 'documents:download' document.current_version.pk %}">
+      {% translate "Télécharger" %}
+    </a>
+    {% if can_preview %}
+    <a class="btn btn-secondary" href="{% url 'documents:preview' document.current_version.pk %}" target="_blank" rel="noopener">
+      {% translate "Aperçu" %}
+    </a>
+    {% endif %}
+    {% endif %}
+  </div>
+</header>
+
+<div class="doc-detail">
+  <section class="card">
+    <header class="card-header">
+      <h2 class="card-title">{% translate "Versions" %}</h2>
+    </header>
+
+    {% if can_preview and document.current_version %}
+    <div class="doc-preview-frame">
+      {% if document.current_version.mime_type == "application/pdf" %}
+      <iframe
+        title="{% translate 'Aperçu PDF' %}"
+        src="{% url 'documents:preview' document.current_version.pk %}"
+      ></iframe>
+      {% elif document.current_version.mime_type|slice:":6" == "image/" %}
+      <img
+        src="{% url 'documents:preview' document.current_version.pk %}"
+        alt="{{ document.title }}"
+      >
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Version" %}</th>
+            <th>{% translate "Fichier" %}</th>
+            <th>{% translate "Par" %}</th>
+            <th>{% translate "Date" %}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for version in document.versions.all %}
+          <tr {% if document.current_version_id == version.id %}class="is-current-version"{% endif %}>
+            <td>
+              v{{ version.version_number }}
+              {% if document.current_version_id == version.id %}
+              <span class="badge badge-info">{% translate "courante" %}</span>
+              {% endif %}
+            </td>
+            <td>
+              {{ version.original_filename }}
+              {% if version.change_note %}<br><span class="text-muted text-sm">{{ version.change_note }}</span>{% endif %}
+            </td>
+            <td>{% if version.uploaded_by %}{{ version.uploaded_by.get_short_name }}{% else %}—{% endif %}</td>
+            <td>{{ version.created_at|date:"d/m/Y H:i" }}</td>
+            <td>
+              <a href="{% url 'documents:download' version.pk %}">{% translate "Télécharger" %}</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <form class="doc-version-form" method="post" action="{% url 'documents:add_version' document.pk %}" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      <h3>{% translate "Nouvelle version" %}</h3>
+      {% for field in version_form %}
+      <div class="form-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+      </div>
+      {% endfor %}
+      <button class="btn btn-primary" type="submit">{% translate "Ajouter la version" %}</button>
+    </form>
+  </section>
+</div>
+
+<form method="post" action="{% url 'documents:delete' document.pk %}" onsubmit="return confirm('{% translate "Supprimer ce document ?" %}');" style="margin-top: var(--space-8);">
+  {% csrf_token %}
+  <button class="btn btn-danger" type="submit">{% translate "Supprimer le document" %}</button>
+</form>
+{% endblock %}

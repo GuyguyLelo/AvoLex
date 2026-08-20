@@ -1,0 +1,129 @@
+{% extends "layouts/app.html" %}
+{% load i18n money %}
+
+{% block title %}{% translate "Tableau de bord" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header page-header-dash">
+  <div>
+    <p class="dash-date">{% now "l j F Y" as dash_date %}{{ dash_date|capfirst }}</p>
+    <h1>{% translate "Tableau de bord" %}</h1>
+    {% if current_cabinet %}
+    <p class="page-lede page-lede-dash">
+      <span class="dash-cabinet-chip">{{ current_cabinet.name }}</span>
+      {% translate "Vue d'ensemble de l'activité du cabinet." %}
+    </p>
+    {% else %}
+    <p class="page-lede">{% translate "Sélectionnez un cabinet pour commencer." %}</p>
+    {% endif %}
+  </div>
+  <div class="cluster">
+    <a class="btn btn-secondary" href="{% url 'clients:create' %}">{% translate "Nouveau client" %}</a>
+    <a class="btn btn-secondary" href="{% url 'matters:create' %}">{% translate "Nouveau dossier" %}</a>
+    <a class="btn btn-primary" href="{% url 'calendar:event_create' %}">{% translate "Nouvel événement" %}</a>
+  </div>
+</header>
+
+{% if stats %}
+<section class="kpi-grid" aria-label="{% translate 'Indicateurs' %}">
+  <a class="kpi-card" href="{% url 'clients:list' %}">
+    <span class="kpi-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </span>
+    <p class="kpi-label">{% translate "Clients" %}</p>
+    <p class="kpi-value">{{ stats.clients_count }}</p>
+    <p class="kpi-hint">{% translate "Annuaire" %}</p>
+  </a>
+  <a class="kpi-card" href="{% url 'matters:list' %}">
+    <span class="kpi-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </span>
+    <p class="kpi-label">{% translate "Dossiers actifs" %}</p>
+    <p class="kpi-value">{{ stats.matters_active }} <span class="kpi-sub">/ {{ stats.matters_total }}</span></p>
+    <p class="kpi-hint">{% translate "Ouverts et en cours" %}</p>
+  </a>
+  <a class="kpi-card" href="{% url 'calendar:list' %}">
+    <span class="kpi-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </span>
+    <p class="kpi-label">{% translate "Échéances à venir" %}</p>
+    <p class="kpi-value">{{ stats.events_upcoming }}</p>
+    <p class="kpi-hint">{% translate "Agenda" %}</p>
+  </a>
+  <a class="kpi-card" href="{% url 'billing:time_list' %}">
+    <span class="kpi-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </span>
+    <p class="kpi-label">{% translate "Temps non facturé" %}</p>
+    <p class="kpi-value">{{ stats.unbilled_hours_amount|money }}</p>
+    <p class="kpi-hint">{% translate "À valoriser" %}</p>
+  </a>
+  <a class="kpi-card{% if stats.unpaid_invoices %} kpi-card--warn{% endif %}" href="{% url 'billing:invoice_list' %}">
+    <span class="kpi-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M7 3h8l4 4v14H7V3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 3v4h4M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </span>
+    <p class="kpi-label">{% translate "Factures impayées" %}</p>
+    <p class="kpi-value">{{ stats.unpaid_invoices }}</p>
+    <p class="kpi-hint">{% translate "Émises ou en retard" %}</p>
+  </a>
+  <a class="kpi-card kpi-card--gold" href="{% url 'billing:hub' %}">
+    <span class="kpi-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </span>
+    <p class="kpi-label">{% translate "CA encaissé (mois)" %}</p>
+    <p class="kpi-value">{{ stats.revenue_month|money }}</p>
+    <p class="kpi-hint">{% translate "Facturation" %}</p>
+  </a>
+</section>
+{% endif %}
+
+<div class="dash-columns">
+  <section class="card">
+    <header class="card-header">
+      <h2 class="card-title">{% translate "Dossiers récents" %}</h2>
+      <a class="card-header-link" href="{% url 'matters:list' %}">{% translate "Tout voir" %}</a>
+    </header>
+    {% if recent_matters %}
+    <ul class="task-list">
+      {% for m in recent_matters %}
+      <li>
+        <a class="list-entity" href="{% url 'matters:detail' m.pk %}">
+          <span class="avatar" aria-hidden="true">{{ m.reference|slice:"-2:" }}</span>
+          <span class="list-entity-text">
+            <span class="list-entity-title">{{ m.title }}</span>
+            <span class="list-entity-meta">{{ m.reference }} · {{ m.client.display_name }}</span>
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">{% translate "Aucun dossier pour l'instant." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <header class="card-header">
+      <h2 class="card-title">{% translate "Prochains événements" %}</h2>
+      <a class="card-header-link" href="{% url 'calendar:list' %}">{% translate "Agenda" %}</a>
+    </header>
+    {% if upcoming_events %}
+    <ul class="task-list">
+      {% for e in upcoming_events %}
+      <li>
+        <a class="list-entity" href="{% url 'calendar:event_detail' e.pk %}">
+          <span class="avatar avatar-event" aria-hidden="true">{{ e.starts_at|date:"d" }}</span>
+          <span class="list-entity-text">
+            <span class="list-entity-title">{{ e.title }}</span>
+            <span class="list-entity-meta">{{ e.starts_at|date:'d/m H:i' }}{% if e.matter %} · {{ e.matter.reference }}{% endif %}</span>
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">{% translate "Aucune échéance planifiée." %}</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

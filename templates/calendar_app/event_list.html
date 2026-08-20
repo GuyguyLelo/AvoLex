@@ -1,0 +1,114 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Agenda" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% translate "Agenda" %}</h1>
+    <p class="page-lede">{% translate "Rendez-vous, audiences, délais et tâches." %}</p>
+  </div>
+  <div class="cluster">
+    <a class="btn btn-secondary" href="{% url 'calendar:event_create' %}?type=task">{% translate "Nouvelle tâche" %}</a>
+    <a class="btn btn-primary" href="{% url 'calendar:event_create' %}">{% translate "Nouvel événement" %}</a>
+  </div>
+</header>
+
+{% if open_tasks %}
+<section class="card" style="margin-bottom: var(--space-6);">
+  <header class="card-header"><h2 class="card-title">{% translate "Tâches ouvertes" %}</h2></header>
+  <ul class="task-list">
+    {% for t in open_tasks %}
+    <li>
+      <a class="list-entity" href="{% url 'calendar:event_detail' t.pk %}">
+        <span class="avatar avatar-event" aria-hidden="true">T</span>
+        <span class="list-entity-text">
+          <span class="list-entity-title">{{ t.title }}</span>
+          <span class="list-entity-meta">
+            {{ t.starts_at|date:"d/m/Y H:i" }}
+            {% if t.matter %} · {{ t.matter.reference }}{% endif %}
+          </span>
+        </span>
+      </a>
+      <form method="post" action="{% url 'calendar:event_done' t.pk %}">{% csrf_token %}
+        <button class="btn btn-sm btn-secondary" type="submit">{% translate "Terminer" %}</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<form class="list-toolbar" method="get">
+  <div class="form-field">
+    <select class="form-input" name="type">
+      <option value="">{% translate "Tous les types" %}</option>
+      {% for value, label in event_types %}
+      <option value="{{ value }}" {% if filter_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-field">
+    <select class="form-input" name="matter">
+      <option value="">{% translate "Tous les dossiers" %}</option>
+      {% for m in matters %}
+      <option value="{{ m.pk }}" {% if filter_matter == m.pk|stringformat:"s" %}selected{% endif %}>{{ m.reference }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-secondary" type="submit">{% translate "Filtrer" %}</button>
+</form>
+
+{% if events %}
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>{% translate "Événement" %}</th>
+        <th>{% translate "Type" %}</th>
+        <th>{% translate "Dossier" %}</th>
+        <th>{% translate "Lieu" %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in events %}
+      <tr>
+        <td>
+          <a class="list-entity" href="{% url 'calendar:event_detail' e.pk %}">
+            <span class="avatar avatar-event" aria-hidden="true">{{ e.starts_at|date:"d" }}</span>
+            <span class="list-entity-text">
+              <span class="list-entity-title">{{ e.title }}</span>
+              <span class="list-entity-meta">{{ e.starts_at|date:"d/m/Y H:i" }}{% if e.is_done %} · {% translate "Fait" %}{% endif %}</span>
+            </span>
+          </a>
+        </td>
+        <td>
+          <span class="badge {% if e.event_type == 'hearing' %}badge-danger{% elif e.event_type == 'deadline' %}badge-warning{% elif e.event_type == 'appointment' %}badge-info{% elif e.event_type == 'task' %}badge-gold{% endif %}">
+            {{ e.get_event_type_display }}
+          </span>
+          {% if e.is_done %}<span class="badge badge-success">{% translate "Fait" %}</span>{% endif %}
+        </td>
+        <td>{% if e.matter %}<a href="{% url 'matters:detail' e.matter_id %}">{{ e.matter.reference }}</a>{% else %}—{% endif %}</td>
+        <td>{{ e.location|default:"—" }}</td>
+        <td class="actions">
+          <div class="cluster" style="justify-content:flex-end;">
+            <a class="btn btn-sm btn-ghost" href="{% url 'calendar:event_detail' e.pk %}">{% translate "Voir" %}</a>
+            <a class="btn btn-sm btn-ghost" href="{% url 'calendar:event_update' e.pk %}">{% translate "Modifier" %}</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% include "partials/pagination.html" %}
+{% else %}
+<section class="empty-state">
+  <h2>{% translate "Agenda vide" %}</h2>
+  <p>{% translate "Planifiez une audience, un rendez-vous ou une tâche." %}</p>
+  <a class="btn btn-primary" href="{% url 'calendar:event_create' %}">{% translate "Ajouter" %}</a>
+</section>
+{% endif %}
+{% endblock %}

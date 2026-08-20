@@ -1,0 +1,166 @@
+[project]
+name = "avolex"
+version = "0.1.0"
+description = "SaaS B2B de gestion de cabinet d'avocats (multi-tenant)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["apps", "config", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "DJ",  # flake8-django
+    "S",   # flake8-bandit
+    "N",   # pep8-naming
+    "RUF", # ruff-specific
+]
+ignore = [
+    "S101", # assert OK in tests
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"]
+"**/migrations/**" = ["E501", "DJ001", "I001", "RUF012"]
+"config/settings/**" = ["S105", "RUF100"]
+"apps/**/models.py" = ["RUF012", "DJ012"]
+"apps/**/admin.py" = ["RUF012"]
+"apps/**/forms.py" = ["RUF012"]
+"apps/**/views.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+force-single-line = false
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+plugins = ["mypy_django_plugin.main"]
+mypy_path = "."
+packages = ["apps", "config"]
+exclude = ["migrations", "tests"]
+
+[[tool.mypy.overrides]]
+module = [
+    "environ.*",
+    "celery.*",
+    "axes.*",
+    "csp.*",
+    "factory.*",
+    "faker.*",
+    "fpdf.*",
+    "weasyprint.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "apps.core.managers",
+    "apps.core.models",
+    "apps.tenants.admin",
+    "apps.tenants.mixins",
+    "apps.tenants.middleware",
+    "apps.tenants.views",
+    "apps.tenants.services",
+    "apps.tenants.context_processors",
+    "apps.accounts.views",
+    "apps.accounts.forms",
+    "apps.accounts.admin",
+    "apps.documents.views",
+    "apps.documents.forms",
+    "apps.documents.services",
+    "apps.documents.admin",
+    "apps.documents.storage",
+    "apps.documents.models",
+    "apps.billing.views",
+    "apps.billing.forms",
+    "apps.billing.services",
+    "apps.billing.admin",
+    "apps.billing.pdf",
+    "apps.billing.tasks",
+    "apps.billing.models",
+    "apps.billing.storage",
+    "apps.clients.views",
+    "apps.clients.forms",
+    "apps.clients.services",
+    "apps.matters.views",
+    "apps.matters.forms",
+    "apps.matters.services",
+    "apps.matters.admin",
+    "apps.calendar_app.views",
+    "apps.calendar_app.forms",
+    "apps.calendar_app.services",
+    "apps.calendar_app.tasks",
+    "apps.calendar_app.admin",
+    "apps.core.dashboard",
+    "apps.core.views",
+    "apps.api.views",
+    "apps.api.serializers",
+    "apps.api.permissions",
+]
+disallow_any_generics = false
+disable_error_code = [
+    "misc",
+    "type-arg",
+    "attr-defined",
+    "return-value",
+    "no-any-return",
+    "union-attr",
+    "assignment",
+    "arg-type",
+    "unused-ignore",
+    "untyped-decorator",
+]
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "-q",
+    "--cov=apps",
+    "--cov=config",
+    "--cov-report=term-missing",
+    "--cov-fail-under=0",
+]
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["apps", "config"]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/apps.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false

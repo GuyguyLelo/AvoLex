@@ -1,0 +1,27 @@
+{% extends "layouts/auth.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Accepter l'invitation" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<h1>{% translate "Rejoindre un cabinet" %}</h1>
+<p class="auth-lede">
+  {% blocktranslate with cabinet=invitation.cabinet.name email=invitation.email %}
+  Invitation pour {{ email }} — cabinet {{ cabinet }}.
+  {% endblocktranslate %}
+</p>
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
+  {% for field in form %}
+  <div class="form-field">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+  </div>
+  {% endfor %}
+  <button class="btn btn-primary btn-block" type="submit">{% translate "Créer mon compte et rejoindre" %}</button>
+</form>
+{% endblock %}

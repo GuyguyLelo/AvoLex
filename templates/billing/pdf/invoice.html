@@ -1,0 +1,92 @@
+{% load money %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>{{ invoice.number|default:"Proforma" }}</title>
+  <style>
+    @page { size: A4; margin: 16mm; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; color: #161c24; }
+    h1 { font-size: 16pt; margin: 0 0 0.35rem; color: #0c1c2e; }
+    .muted { color: #667483; font-size: 9pt; margin: 0.15rem 0; }
+    .grid { display: table; width: 100%; margin-bottom: 1.2rem; }
+    .col { display: table-cell; width: 50%; vertical-align: top; }
+    table { width: 100%; border-collapse: collapse; margin: 1.2rem 0; }
+    th, td { border-bottom: 1px solid #e2e6ec; padding: 0.45rem 0.35rem; text-align: left; }
+    th { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 0.04em; color: #667483; }
+    .right { text-align: right; }
+    .totals { width: 48%; margin-left: auto; }
+    .totals td { border: 0; padding: 0.3rem 0; }
+    .totals .grand { font-weight: 700; font-size: 12pt; color: #0c1c2e; }
+    .gold { color: #c49a3c; }
+    p { margin: 0.15rem 0; }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <div class="col">
+      <h1>{{ cabinet.name }}</h1>
+      {% if cabinet.legal_name %}<p>{{ cabinet.legal_name }}</p>{% endif %}
+      {% if cabinet.address_line1 %}<p>{{ cabinet.address_line1 }}</p>{% endif %}
+      <p>{% if cabinet.postal_code %}{{ cabinet.postal_code }} {% endif %}{{ cabinet.city }}</p>
+      {% if cabinet.siret %}<p class="muted">SIRET {{ cabinet.siret }}</p>{% endif %}
+      {% if cabinet.vat_number %}<p class="muted">TVA {{ cabinet.vat_number }}</p>{% endif %}
+      {% if cabinet.bar_association %}<p class="muted">{{ cabinet.bar_association }}</p>{% endif %}
+    </div>
+    <div class="col right">
+      <h1>Facture <span class="gold">{{ invoice.number|default:"PROFORMA" }}</span></h1>
+      <p>Émise le {{ invoice.issued_at|date:"d/m/Y"|default:"—" }}</p>
+      {% if invoice.due_at %}<p>Échéance {{ invoice.due_at|date:"d/m/Y" }}</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <p class="muted">Facturé à</p>
+      <p><strong>{{ client.display_name }}</strong></p>
+      {% if client.address_line1 %}<p>{{ client.address_line1 }}</p>{% endif %}
+      <p>{% if client.postal_code %}{{ client.postal_code }} {% endif %}{{ client.city }}</p>
+    </div>
+    <div class="col right">
+      {% if invoice.matter %}
+      <p class="muted">Dossier</p>
+      <p>{{ invoice.matter.reference }} — {{ invoice.matter.title }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th class="right">Qté</th>
+        <th class="right">P.U. HT</th>
+        <th class="right">Montant HT</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+      <tr>
+        <td>{{ line.description }}</td>
+        <td class="right">{{ line.quantity }}</td>
+        <td class="right">{{ line.unit_price|money }}</td>
+        <td class="right">{{ line.amount|money }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr><td>Total HT</td><td class="right">{{ invoice.subtotal|money }}</td></tr>
+    <tr><td>TVA ({{ invoice.tax_rate }} %)</td><td class="right">{{ invoice.tax_amount|money }}</td></tr>
+    <tr class="grand"><td>Total TTC</td><td class="right">{{ invoice.total|money }}</td></tr>
+  </table>
+
+  {% if invoice.notes %}
+  <p class="muted">{{ invoice.notes }}</p>
+  {% endif %}
+  <p class="muted" style="margin-top:2rem;font-size:9pt;">
+    Document généré par AvoLex — ne constitue pas un conseil juridique.
+  </p>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% if matter %}{% translate "Modifier le dossier" %}{% else %}{% translate "Nouveau dossier" %}{% endif %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <div>
+    <h1>{% if matter %}{% translate "Modifier le dossier" %}{% else %}{% translate "Nouveau dossier" %}{% endif %}</h1>
+    {% if not matter %}<p class="page-lede">{% translate "La référence sera générée automatiquement (DOS-AAAA-NNNNN)." %}</p>{% endif %}
+  </div>
+</header>
+
+<form method="post" class="card" novalidate style="max-width: 42rem;">
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  {% for field in form %}
+  <div class="form-field">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+  </div>
+  {% endfor %}
+  <div class="cluster">
+    <button class="btn btn-primary" type="submit">{% translate "Enregistrer" %}</button>
+    <a class="btn btn-secondary" href="{% if matter %}{% url 'matters:detail' matter.pk %}{% else %}{% url 'matters:list' %}{% endif %}">{% translate "Annuler" %}</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "layouts/public.html" %}
+{% load static i18n %}
+
+{% block title %}{{ SITE_NAME }} — {% translate "Le cabinet, enfin organisé" %}{% endblock %}
+
+{% block meta_description %}{% translate "AvoLex aide les avocats et petits cabinets à gérer clients, dossiers, agenda, documents et facturation — en toute confidentialité." %}{% endblock %}
+
+{% block public_body_modifier %}landing-body{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/landing.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="landing-hero" aria-labelledby="hero-title">
+  <div class="landing-hero-inner">
+    <div class="landing-hero-copy">
+      <p class="landing-brand" id="landing-brand">Avo<span>Lex</span></p>
+      <h1 id="hero-title">{% translate "Le logiciel de cabinet pensé pour le secret professionnel." %}</h1>
+      <p class="landing-hero-lede">
+        {% translate "Clients, dossiers, échéances, documents et facturation — un seul espace pour les indépendants et cabinets de 2 à 30 personnes." %}
+      </p>
+      <div class="landing-hero-cta">
+        <a class="btn btn-primary" href="{% url 'accounts:register' %}">{% translate "Démarrer l'essai gratuit" %}</a>
+        <a class="btn btn-secondary" href="#fonctionnalites">{% translate "Découvrir les modules" %}</a>
+      </div>
+    </div>
+    <aside class="landing-preview" aria-hidden="true">
+      <div class="landing-preview-window">
+        <div class="landing-preview-chrome">
+          <span></span><span></span><span></span>
+          <em>Tableau de bord</em>
+        </div>
+        <div class="landing-preview-kpis">
+          <div><small>Clients</small><b>12</b></div>
+          <div><small>Dossiers</small><b>8</b></div>
+          <div><small>À venir</small><b>6</b></div>
+        </div>
+        <div class="landing-preview-row"><i></i><span>DOS-2026-00012 · Licenciement contesté</span></div>
+        <div class="landing-preview-row"><i></i><span>Audience prud’homale · 21/08</span></div>
+        <div class="landing-preview-row"><i></i><span>TechNova SAS · Contentieux commercial</span></div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section class="landing-section" id="fonctionnalites" aria-labelledby="features-title">
+  <div class="container">
+    <header class="landing-section-head">
+      <h2 id="features-title">{% translate "Tout le cabinet, sans usine à gaz" %}</h2>
+      <p>{% translate "Les essentiels du quotidien avocat, cloisonnés par cabinet et prêts pour la conformité." %}</p>
+    </header>
+    <div class="feature-grid">
+      <article class="feature-item">
+        <h3>{% translate "Clients & conflits" %}</h3>
+        <p>{% translate "Fiches PP/PM, coordonnées et recherche de conflit d'intérêts avant d'ouvrir un dossier." %}</p>
+      </article>
+      <article class="feature-item">
+        <h3>{% translate "Dossiers & agenda" %}</h3>
+        <p>{% translate "Références automatiques, statuts, audiences, délais de procédure et rappels." %}</p>
+      </article>
+      <article class="feature-item">
+        <h3>{% translate "GED sécurisée" %}</h3>
+        <p>{% translate "Documents hors webroot, versioning simple, accès contrôlé par appartenance au cabinet." %}</p>
+      </article>
+      <article class="feature-item">
+        <h3>{% translate "Temps & facturation" %}</h3>
+        <p>{% translate "Saisie de temps, débours, factures PDF numérotées et suivi des impayés." %}</p>
+      </article>
+      <article class="feature-item">
+        <h3>{% translate "Multi-cabinet" %}</h3>
+        <p>{% translate "Un compte, plusieurs cabinets. Isolation stricte des données entre organisations." %}</p>
+      </article>
+      <article class="feature-item">
+        <h3>{% translate "Rôles métier" %}</h3>
+        <p>{% translate "Propriétaire, avocat, collaborateur, secrétaire ou lecture seule — permissions claires." %}</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="landing-cta" aria-labelledby="cta-title">
+  <div class="container">
+    <h2 id="cta-title">{% translate "Prêt à structurer votre cabinet ?" %}</h2>
+    <p>{% translate "Créez votre espace en quelques minutes. Aucune carte bancaire requise pour l'essai." %}</p>
+    <a class="btn btn-primary" href="{% url 'accounts:register' %}">{% translate "Créer mon cabinet" %}</a>
+  </div>
+</section>
+
+<footer class="landing-footer">
+  <div class="container landing-footer-inner">
+    <p>© {% now "Y" %} {{ SITE_NAME }}</p>
+    <p>{% translate "Hébergement UE · RGPD · Secret professionnel" %}</p>
+  </div>
+</footer>
+{% endblock %}
