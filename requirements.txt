@@ -1,0 +1,27 @@
+# AvoLex — dépendances d'exécution
+# Développement : pip install -r requirements/dev.txt
+# Production   : pip install -r requirements/prod.txt
+
+# Django
+Django>=5.0,<5.2
+django-environ>=0.11,<1.0
+psycopg[binary]>=3.1,<4.0
+argon2-cffi>=23.1,<24.0
+
+# Security
+django-axes>=6.5,<7.0
+django-csp>=4.0,<5.0
+
+# Async / cache
+celery[redis]>=5.4,<6.0
+redis>=5.0,<6.0
+
+# PDF
+WeasyPrint>=62.0,<64.0
+fpdf2>=2.8,<3.0
+
+# Static files
+whitenoise>=6.7,<7.0
+
+# API
+djangorestframework>=3.15,<3.16
