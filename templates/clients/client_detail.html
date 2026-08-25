@@ -10,12 +10,24 @@
 {% block content %}
 <article class="client-sheet">
   <header class="client-sheet-header">
-    <div class="client-sheet-title">
-      <p class="client-sheet-kicker">
-        {{ client.get_client_type_display }}
-        {% if client.city %}<span aria-hidden="true"> · </span>{{ client.city }}{% endif %}
-      </p>
-      <h1>{{ client.display_name }}</h1>
+    <div class="client-sheet-identity">
+      <span class="client-sheet-avatar {% if client.client_type == 'company' %}is-company{% endif %}" aria-hidden="true">
+        {{ client.display_name.0|upper }}
+      </span>
+      <div class="client-sheet-title">
+        <p class="client-sheet-kicker">
+          {{ client.get_client_type_display }}
+          {% if client.city %}<span aria-hidden="true"> · </span>{{ client.city }}{% endif %}
+        </p>
+        <h1>{{ client.display_name }}</h1>
+        {% if client.email or client.phone %}
+        <p class="client-sheet-lede">
+          {% if client.email %}<a href="mailto:{{ client.email }}">{{ client.email }}</a>{% endif %}
+          {% if client.email and client.phone %}<span aria-hidden="true"> · </span>{% endif %}
+          {% if client.phone %}<a href="tel:{{ client.phone }}">{{ client.phone }}</a>{% endif %}
+        </p>
+        {% endif %}
+      </div>
     </div>
     <div class="client-sheet-actions">
       <a class="btn btn-primary btn-sm" href="{% url 'matters:create' %}?client={{ client.pk }}">{% translate "Nouveau dossier" %}</a>
@@ -27,50 +39,50 @@
     </div>
   </header>
 
-  <div class="client-sheet-meta">
-    <div>
+  <section class="client-sheet-facts" aria-label="{% translate 'Coordonnées' %}">
+    <div class="client-fact">
       <span class="client-sheet-label">{% translate "E-mail" %}</span>
-      {% if client.email %}<a href="mailto:{{ client.email }}">{{ client.email }}</a>{% else %}<span>—</span>{% endif %}
+      {% if client.email %}<a href="mailto:{{ client.email }}">{{ client.email }}</a>{% else %}<span class="client-fact-empty">—</span>{% endif %}
     </div>
-    <div>
+    <div class="client-fact">
       <span class="client-sheet-label">{% translate "Téléphone" %}</span>
-      {% if client.phone %}<a href="tel:{{ client.phone }}">{{ client.phone }}</a>{% else %}<span>—</span>{% endif %}
+      {% if client.phone %}<a href="tel:{{ client.phone }}">{{ client.phone }}</a>{% else %}<span class="client-fact-empty">—</span>{% endif %}
     </div>
-    <div>
+    <div class="client-fact client-fact--wide">
       <span class="client-sheet-label">{% translate "Adresse" %}</span>
       {% if client.address_line1 or client.city %}
       <span>
-        {% if client.address_line1 %}{{ client.address_line1 }}{% if client.address_line2 %}, {{ client.address_line2 }}{% endif %} · {% endif %}
+        {% if client.address_line1 %}{{ client.address_line1 }}{% if client.address_line2 %}, {{ client.address_line2 }}{% endif %}<br>{% endif %}
         {{ client.postal_code }} {{ client.city }}
-        {% if client.country %} ({{ client.country }}){% endif %}
+        {% if client.country %} · {{ client.country }}{% endif %}
       </span>
       {% else %}
-      <span>—</span>
+      <span class="client-fact-empty">—</span>
       {% endif %}
     </div>
     {% if client.client_type == "person" and client.birth_date %}
-    <div>
+    <div class="client-fact">
       <span class="client-sheet-label">{% translate "Naissance" %}</span>
       <span>{{ client.birth_date|date:"d/m/Y" }}</span>
     </div>
     {% endif %}
     {% if client.client_type == "company" and client.siret %}
-    <div>
+    <div class="client-fact">
       <span class="client-sheet-label">{% translate "SIRET" %}</span>
-      <span>{{ client.siret }}</span>
+      <span class="client-fact-mono">{{ client.siret }}</span>
     </div>
     {% endif %}
     {% if client.client_type == "company" and client.legal_form %}
-    <div>
-      <span class="client-sheet-label">{% translate "Forme" %}</span>
+    <div class="client-fact">
+      <span class="client-sheet-label">{% translate "Forme juridique" %}</span>
       <span>{{ client.legal_form }}</span>
     </div>
     {% endif %}
-    <div>
+    <div class="client-fact">
       <span class="client-sheet-label">{% translate "Dossiers" %}</span>
-      <span>{{ matters|length }}</span>
+      <span class="client-fact-stat">{{ matters|length }}</span>
     </div>
-  </div>
+  </section>
 
   {% if client.notes %}
   <section class="client-sheet-notes">
@@ -81,7 +93,10 @@
 
   <section class="client-sheet-matters">
     <header class="client-sheet-matters-head">
-      <h2>{% translate "Historique des dossiers" %}</h2>
+      <div>
+        <h2>{% translate "Historique des dossiers" %}</h2>
+        <p class="client-sheet-matters-lede">{% translate "Affaires rattachées à ce client." %}</p>
+      </div>
       <a class="btn btn-secondary btn-sm" href="{% url 'matters:create' %}?client={{ client.pk }}">{% translate "Ajouter" %}</a>
     </header>
 
@@ -100,18 +115,20 @@
         <tbody>
           {% for m in matters %}
           <tr>
-            <td><a href="{% url 'matters:detail' m.pk %}">{{ m.reference }}</a></td>
+            <td>
+              <a class="list-ref" href="{% url 'matters:detail' m.pk %}">{{ m.reference }}</a>
+            </td>
             <td>{{ m.title }}</td>
             <td>
-              <span class="badge {% if m.status == 'closed' %}badge-warning{% elif m.status == 'in_progress' %}badge-info{% else %}badge-gold{% endif %}">
+              <span class="badge {% if m.status == 'closed' %}badge-success{% elif m.status == 'in_progress' %}badge-info{% elif m.status == 'on_hold' %}badge-warning{% else %}badge-gold{% endif %}">
                 {{ m.get_status_display }}
               </span>
               {% if m.is_archived %}
               <span class="badge badge-warning">{% translate "Archivé" %}</span>
               {% endif %}
             </td>
-            <td>{{ m.responsible_lawyer.get_full_name|default:m.responsible_lawyer.email }}</td>
-            <td>{{ m.opened_at|date:"d/m/Y"|default:"—" }}</td>
+            <td class="clients-cell-muted">{{ m.responsible_lawyer.get_full_name|default:m.responsible_lawyer.email }}</td>
+            <td class="clients-cell-muted">{{ m.opened_at|date:"d/m/Y"|default:"—" }}</td>
           </tr>
           {% endfor %}
         </tbody>
