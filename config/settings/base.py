@@ -25,7 +25,8 @@ environ.Env.read_env(BASE_DIR / ".env")
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
-
+# URL Configuration
+ROOT_URLCONF = "config.urls"
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -271,3 +272,20 @@ def require_setting(name: str) -> str:
     if not value:
         raise ImproperlyConfigured(f"La variable d'environnement {name} est obligatoire.")
     return value
+
+# Configuration du sous-chemin (ajouté pour /avolex/)
+FORCE_SCRIPT_NAME = env.str("FORCE_SCRIPT_NAME", default="")
+if FORCE_SCRIPT_NAME:
+    # Ajuster STATIC_URL et MEDIA_URL pour le sous-chemin
+    STATIC_URL = f"{FORCE_SCRIPT_NAME}/static/"
+    MEDIA_URL = f"{FORCE_SCRIPT_NAME}/media/"
+else:
+    STATIC_URL = "/static/"
+    MEDIA_URL = "/media/"
+
+# Configuration des fichiers statiques et médias
+#STATIC_URL = "/avolex/static/"
+#STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+#MEDIA_URL = "/avolex/media/"
+MEDIA_ROOT = BASE_DIR / "private_media"
