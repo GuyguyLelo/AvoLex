@@ -10,6 +10,7 @@ from django.db.models import QuerySet
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.translation import gettext as _g
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
@@ -17,6 +18,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from apps.clients.models import Client
 from apps.core.mixins import BreadcrumbMixin
 from apps.matters.forms import MatterForm
+from apps.calendar_app.models import Event, EventType, HearingStatus
 from apps.matters.models import Matter, MatterStatus
 from apps.matters.services import archive_matter, create_matter, matters_queryset, soft_delete_matter, update_matter
 from apps.tenants.mixins import CabinetPermissionMixin
@@ -78,6 +80,16 @@ class MatterDetailView(CabinetPermissionMixin, BreadcrumbMixin, DetailView):
         ctx["can_delete_matter"] = not matter.is_treated
         ctx["can_archive_matter"] = (
             matter.status == MatterStatus.CLOSED and not matter.is_archived
+        )
+        now = timezone.now()
+        ctx["upcoming_hearings"] = (
+            matter.events.filter(
+                event_type=EventType.HEARING,
+                starts_at__gte=now,
+                hearing_status__in=(HearingStatus.SCHEDULED, ""),
+            )
+            .select_related("assigned_to")
+            .order_by("starts_at")[:10]
         )
         return ctx
 

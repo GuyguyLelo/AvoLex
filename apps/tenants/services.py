@@ -32,6 +32,11 @@ UserModel = get_user_model()
 SESSION_CABINET_KEY = "cabinet_id"
 
 
+def is_platform_admin(user: User | None) -> bool:
+    """Indique si l'utilisateur est administrateur plateforme (supervision)."""
+    return bool(user and getattr(user, "is_authenticated", False) and getattr(user, "is_platform_admin", False))
+
+
 def get_membership(*, user: User, cabinet: Cabinet) -> Membership | None:
     """Retourne l'adhésion active d'un utilisateur pour un cabinet."""
     return (
@@ -43,14 +48,24 @@ def get_membership(*, user: User, cabinet: Cabinet) -> Membership | None:
 
 def user_has_cabinet_perm(*, user: User, cabinet: Cabinet, perm: str) -> bool:
     """Vérifie qu'un utilisateur a une permission logique sur un cabinet."""
+    if is_platform_admin(user):
+        # Supervision : lecture seule sur tous les cabinets.
+        return perm == PERM_VIEW
     membership = get_membership(user=user, cabinet=cabinet)
     if membership is None:
         return False
     return role_has_perm(membership.role, perm)
 
 
-def require_cabinet_perm(*, user: User, cabinet: Cabinet, perm: str) -> Membership:
-    """Comme user_has_cabinet_perm mais lève PermissionDenied."""
+def require_cabinet_perm(*, user: User, cabinet: Cabinet, perm: str) -> Membership | None:
+    """Comme user_has_cabinet_perm mais lève PermissionDenied.
+
+    Pour un admin plateforme en lecture seule, retourne None (pas d'adhésion).
+    """
+    if is_platform_admin(user):
+        if perm != PERM_VIEW:
+            raise PermissionDenied(_("Supervision plateforme : lecture seule."))
+        return get_membership(user=user, cabinet=cabinet)
     membership = get_membership(user=user, cabinet=cabinet)
     if membership is None or not role_has_perm(membership.role, perm):
         raise PermissionDenied(_("Permission refusée pour ce cabinet."))
@@ -58,7 +73,9 @@ def require_cabinet_perm(*, user: User, cabinet: Cabinet, perm: str) -> Membersh
 
 
 def list_user_cabinets(user: User) -> list[Cabinet]:
-    """Liste les cabinets actifs auxquels l'utilisateur appartient."""
+    """Liste les cabinets visibles : adhésions, ou tous si admin plateforme."""
+    if is_platform_admin(user):
+        return list(Cabinet.objects.filter(is_active=True).order_by("name"))
     return list(
         Cabinet.objects.filter(
             memberships__user=user,
@@ -130,13 +147,17 @@ def clear_session_cabinet(request: HttpRequest) -> None:
 
 def switch_cabinet(*, request: HttpRequest, user: User, cabinet_id: str) -> Cabinet:
     """
-    Change le cabinet courant si l'utilisateur y a une adhésion active.
+    Change le cabinet courant si l'utilisateur y a une adhésion active
+    (ou s'il est administrateur plateforme).
 
     Raises:
         PermissionDenied: si aucune adhésion active.
         Cabinet.DoesNotExist: si le cabinet est introuvable.
     """
     cabinet = Cabinet.objects.get(pk=cabinet_id, is_active=True)
+    if is_platform_admin(user):
+        set_session_cabinet(request, cabinet)
+        return cabinet
     membership = get_membership(user=user, cabinet=cabinet)
     if membership is None:
         raise PermissionDenied(_("Vous n'appartenez pas à ce cabinet."))

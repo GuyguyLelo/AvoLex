@@ -6,6 +6,13 @@
   </a>
 
   <nav class="app-nav" aria-label="{% translate 'Menu principal' %}">
+    {% if is_platform_admin %}
+    <p class="app-nav-section">{% translate "Plateforme" %}</p>
+    <a class="app-nav-link {% if request.resolver_match.url_name == 'supervision' %}is-active{% endif %}" href="{% url 'core:supervision' %}">
+      {% translate "Supervision" %}
+    </a>
+    {% endif %}
+
     <p class="app-nav-section">{% translate "Espace de travail" %}</p>
     <a class="app-nav-link {% if request.resolver_match.url_name == 'home' %}is-active{% endif %}" href="{% url 'core:home' %}">
       {% translate "Tableau de bord" %}
@@ -15,6 +22,9 @@
     </a>
     <a class="app-nav-link {% if request.resolver_match.app_name == 'matters' %}is-active{% endif %}" href="{% url 'matters:list' %}">
       {% translate "Dossiers" %}
+    </a>
+    <a class="app-nav-link {% if request.resolver_match.app_name == 'hearings' %}is-active{% endif %}" href="{% url 'hearings:list' %}">
+      {% translate "Audiences" %}
     </a>
     <a class="app-nav-link {% if request.resolver_match.app_name == 'calendar' %}is-active{% endif %}" href="{% url 'calendar:list' %}">
       {% translate "Agenda" %}
@@ -36,7 +46,9 @@
     {% if current_cabinet %}
       <p>{{ current_cabinet.name }}</p>
     {% endif %}
-    {% if current_membership %}
+    {% if is_platform_admin %}
+      <p>{% translate "Supervision (lecture seule)" %}</p>
+    {% elif current_membership %}
       <p>{{ current_membership.get_role_display }}</p>
     {% endif %}
   </div>

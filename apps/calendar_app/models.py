@@ -19,6 +19,15 @@ class EventType(models.TextChoices):
     TASK = "task", _("Tâche")
 
 
+class HearingStatus(models.TextChoices):
+    """Statut d'une audience judiciaire."""
+
+    SCHEDULED = "scheduled", _("Planifiée")
+    HELD = "held", _("Tenue")
+    POSTPONED = "postponed", _("Reportée")
+    CANCELLED = "cancelled", _("Annulée")
+
+
 class Event(TenantOwnedModel):
     """Événement / échéance / tâche du cabinet."""
 
@@ -42,7 +51,18 @@ class Event(TenantOwnedModel):
     starts_at = models.DateTimeField(_("début"), db_index=True)
     ends_at = models.DateTimeField(_("fin"), null=True, blank=True)
     all_day = models.BooleanField(_("journée entière"), default=False)
-    location = models.CharField(_("lieu"), max_length=255, blank=True)
+    location = models.CharField(_("salle / lieu"), max_length=255, blank=True)
+    court = models.CharField(_("tribunal"), max_length=255, blank=True)
+    chamber = models.CharField(_("chambre"), max_length=128, blank=True)
+    hearing_status = models.CharField(
+        _("statut audience"),
+        max_length=20,
+        choices=HearingStatus.choices,
+        blank=True,
+        default="",
+        db_index=True,
+    )
+    hearing_report = models.TextField(_("compte-rendu d'audience"), blank=True)
     is_done = models.BooleanField(_("terminé"), default=False)
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -68,8 +88,8 @@ class Event(TenantOwnedModel):
         indexes = [
             models.Index(fields=["cabinet", "starts_at"], name="calendar_ap_cabinet_7be077_idx"),
             models.Index(
-                fields=["cabinet", "event_type", "starts_at"],
-                name="calendar_ap_cabinet_6708af_idx",
+                fields=["cabinet", "event_type", "hearing_status", "starts_at"],
+                name="cal_event_hearing_status_idx",
             ),
             models.Index(
                 fields=["remind_at"],

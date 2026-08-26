@@ -14,9 +14,17 @@ class UserAdmin(DjangoUserAdmin):  # type: ignore[type-arg]
     """Administration du User e-mail."""
 
     ordering = ("email",)
-    list_display = ("email", "first_name", "last_name", "is_staff", "is_active", "date_joined")
+    list_display = (
+        "email",
+        "first_name",
+        "last_name",
+        "is_staff",
+        "is_platform_admin",
+        "is_active",
+        "date_joined",
+    )
     search_fields = ("email", "first_name", "last_name")
-    list_filter = ("is_staff", "is_superuser", "is_active")
+    list_filter = ("is_staff", "is_platform_admin", "is_superuser", "is_active")
 
     fieldsets = (
         (None, {"fields": ("email", "password")}),
@@ -26,7 +34,16 @@ class UserAdmin(DjangoUserAdmin):  # type: ignore[type-arg]
         ),
         (
             _("Permissions"),
-            {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")},
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_platform_admin",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
         ),
         (_("Dates importantes"), {"fields": ("last_login", "date_joined")}),
     )
@@ -35,7 +52,14 @@ class UserAdmin(DjangoUserAdmin):  # type: ignore[type-arg]
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "password1", "password2", "is_staff", "is_active"),
+                "fields": (
+                    "email",
+                    "password1",
+                    "password2",
+                    "is_staff",
+                    "is_platform_admin",
+                    "is_active",
+                ),
             },
         ),
     )

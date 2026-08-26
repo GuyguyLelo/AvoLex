@@ -24,6 +24,7 @@
   </div>
   <div class="cluster">
     <a class="btn btn-secondary" href="{% url 'documents:upload' %}?matter={{ matter.pk }}">{% translate "Document" %}</a>
+    <a class="btn btn-secondary" href="{% url 'hearings:create' %}?matter={{ matter.pk }}">{% translate "Audience" %}</a>
     <a class="btn btn-secondary" href="{% url 'calendar:event_create' %}?matter={{ matter.pk }}">{% translate "Événement" %}</a>
     {% if not matter.is_archived %}
     <a class="btn btn-secondary" href="{% url 'matters:update' matter.pk %}">{% translate "Modifier" %}</a>
@@ -112,6 +113,37 @@
     {% endif %}
   </dl>
 </section>
+
+{% if upcoming_hearings %}
+<section class="card matter-hearings">
+  <header class="card-header">
+    <h2 class="card-title">{% translate "Audiences à venir" %}</h2>
+    <a class="btn btn-secondary btn-sm" href="{% url 'hearings:create' %}?matter={{ matter.pk }}">{% translate "Planifier" %}</a>
+  </header>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>{% translate "Date" %}</th>
+          <th>{% translate "Intitulé" %}</th>
+          <th>{% translate "Tribunal" %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in upcoming_hearings %}
+        <tr>
+          <td>{{ h.starts_at|date:"d/m/Y H:i" }}</td>
+          <td>{{ h.title }}</td>
+          <td>{{ h.court|default:"—" }}</td>
+          <td><a class="btn btn-sm btn-ghost" href="{% url 'calendar:event_detail' h.pk %}">{% translate "Voir" %}</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
 
 <section>
   <header class="card-header"><h2 class="card-title">{% translate "Historique des actions" %}</h2></header>

@@ -56,6 +56,22 @@ Après `seed_demo` :
 | App | http://127.0.0.1:8000/app/ |
 | API | http://127.0.0.1:8000/api/v1/clients/ (session auth) |
 
+### Supervision plateforme (tous les cabinets)
+
+Compte en **lecture seule** pour suivre l’activité de tous les cabinets :
+
+```bash
+python manage.py create_platform_admin
+```
+
+| Champ | Valeur |
+|-------|--------|
+| E-mail | `supervision@avolex.local` |
+| Mot de passe | `@Supervise123` |
+| Accueil | http://127.0.0.1:8000/app/supervision/ |
+
+Ce compte voit tous les cabinets dans le sélecteur, consulte leur tableau de bord, mais ne peut pas créer ni modifier de données.
+
 ### Modules disponibles
 
 | Module | URL |
@@ -63,6 +79,7 @@ Après `seed_demo` :
 | Clients | `/clients/` |
 | Dossiers | `/dossiers/` |
 | Agenda | `/agenda/` |
+| Audiences | `/audiences/` |
 | Documents | `/documents/` |
 | Facturation | `/billing/` |
 | API REST | `/api/v1/` |

@@ -1,0 +1,165 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Supervision" %} — {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<header class="page-header page-header-dash">
+  <div>
+    <p class="dash-date">{% translate "Administrateur plateforme" %}</p>
+    <h1>{% translate "Supervision" %}</h1>
+    <p class="page-lede page-lede-dash">
+      {% translate "Vue d'ensemble de tous les cabinets et de leur activité." %}
+    </p>
+  </div>
+  {% if current_cabinet %}
+  <div class="cluster">
+    <a class="btn btn-secondary" href="{% url 'core:home' %}">{% translate "Ouvrir le cabinet actif" %}</a>
+  </div>
+  {% endif %}
+</header>
+
+{% if platform_stats %}
+<section class="kpi-grid" aria-label="{% translate 'Indicateurs plateforme' %}">
+  <div class="kpi-card">
+    <p class="kpi-label">{% translate "Cabinets" %}</p>
+    <p class="kpi-value">{{ platform_stats.cabinets_count }}</p>
+    <p class="kpi-hint">{% translate "Actifs" %}</p>
+  </div>
+  <div class="kpi-card">
+    <p class="kpi-label">{% translate "Membres" %}</p>
+    <p class="kpi-value">{{ platform_stats.members_count }}</p>
+    <p class="kpi-hint">{% translate "Adhésions actives" %}</p>
+  </div>
+  <div class="kpi-card">
+    <p class="kpi-label">{% translate "Clients" %}</p>
+    <p class="kpi-value">{{ platform_stats.clients_count }}</p>
+    <p class="kpi-hint">{% translate "Tous cabinets" %}</p>
+  </div>
+  <div class="kpi-card">
+    <p class="kpi-label">{% translate "Dossiers actifs" %}</p>
+    <p class="kpi-value">{{ platform_stats.matters_active }}</p>
+    <p class="kpi-hint">{% translate "Ouverts et en cours" %}</p>
+  </div>
+  <div class="kpi-card">
+    <p class="kpi-label">{% translate "Audiences à venir" %}</p>
+    <p class="kpi-value">{{ platform_stats.hearings_upcoming }}</p>
+    <p class="kpi-hint">{% translate "Planifiées" %}</p>
+  </div>
+  <div class="kpi-card{% if platform_stats.unpaid_invoices %} kpi-card--warn{% endif %}">
+    <p class="kpi-label">{% translate "Factures impayées" %}</p>
+    <p class="kpi-value">{{ platform_stats.unpaid_invoices }}</p>
+    <p class="kpi-hint">{% translate "Émises ou en retard" %}</p>
+  </div>
+</section>
+{% endif %}
+
+<div class="dash-columns">
+  <section class="card">
+    <header class="card-header">
+      <h2 class="card-title">{% translate "Cabinets" %}</h2>
+    </header>
+    {% if cabinet_overviews %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{% translate "Cabinet" %}</th>
+            <th>{% translate "Membres" %}</th>
+            <th>{% translate "Clients" %}</th>
+            <th>{% translate "Dossiers" %}</th>
+            <th>{% translate "Audiences" %}</th>
+            <th>{% translate "Impayés" %}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in cabinet_overviews %}
+          <tr>
+            <td>
+              <strong>{{ row.cabinet.name }}</strong>
+              {% if row.cabinet.slug %}<div class="muted">{{ row.cabinet.slug }}</div>{% endif %}
+            </td>
+            <td>{{ row.members_count }}</td>
+            <td>{{ row.clients_count }}</td>
+            <td>{{ row.matters_active }}</td>
+            <td>{{ row.hearings_upcoming }}</td>
+            <td>{{ row.unpaid_invoices }}</td>
+            <td>
+              <form method="post" action="{% url 'tenants:switch' %}">
+                {% csrf_token %}
+                <input type="hidden" name="cabinet_id" value="{{ row.cabinet.pk }}">
+                <input type="hidden" name="next" value="{% url 'core:home' %}">
+                <button class="btn btn-ghost btn-sm" type="submit">{% translate "Consulter" %}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state">{% translate "Aucun cabinet actif." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <header class="card-header">
+      <h2 class="card-title">{% translate "Activité récente" %}</h2>
+    </header>
+    {% if recent_activity %}
+    <ul class="task-list">
+      {% for m in recent_activity %}
+      <li>
+        <div class="list-entity">
+          <span class="avatar" aria-hidden="true">{{ m.reference|slice:"-2:" }}</span>
+          <span class="list-entity-text">
+            <span class="list-entity-title">{{ m.reference }} — {{ m.title }}</span>
+            <span class="list-entity-meta">
+              {{ m.cabinet.name }}
+              {% if m.client %} · {{ m.client }}{% endif %}
+              · {{ m.updated_at|date:"d/m/Y H:i" }}
+            </span>
+          </span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-state">{% translate "Aucune activité récente." %}</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card" style="margin-top:1.25rem;">
+  <header class="card-header">
+    <h2 class="card-title">{% translate "Prochaines audiences (tous cabinets)" %}</h2>
+  </header>
+  {% if upcoming_hearings %}
+  <ul class="task-list">
+    {% for h in upcoming_hearings %}
+    <li>
+      <div class="list-entity">
+        <span class="avatar avatar-hearing" aria-hidden="true">{{ h.starts_at|date:"d" }}</span>
+        <span class="list-entity-text">
+          <span class="list-entity-title">{{ h.title }}</span>
+          <span class="list-entity-meta">
+            {{ h.starts_at|date:"d/m/Y H:i" }}
+            · {{ h.cabinet.name }}
+            {% if h.matter %} · {{ h.matter.reference }}{% endif %}
+            {% if h.court %} · {{ h.court }}{% endif %}
+          </span>
+        </span>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-state">{% translate "Aucune audience planifiée." %}</p>
+  {% endif %}
+</section>
+
+<p class="page-lede" style="margin-top:1.5rem;">
+  {% translate "Mode lecture seule : vous pouvez consulter chaque cabinet via le sélecteur ou le bouton Consulter, sans modifier les données." %}
+</p>
+{% endblock %}

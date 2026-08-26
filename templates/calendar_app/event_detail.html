@@ -19,16 +19,19 @@
       {% if event.is_done %}
       · <span class="badge badge-success">{% translate "Terminé" %}</span>
       {% endif %}
+      {% if event.event_type == 'hearing' and event.hearing_status %}
+      · <span class="badge {% if event.hearing_status == 'held' %}badge-success{% elif event.hearing_status == 'postponed' %}badge-warning{% elif event.hearing_status == 'cancelled' %}badge-gold{% else %}badge-danger{% endif %}">
+        {{ event.get_hearing_status_display }}
+      </span>
+      {% endif %}
     </p>
   </div>
   <div class="cluster">
-    {% if event.event_type == 'task' and not event.is_done %}
-    <form method="post" action="{% url 'calendar:event_done' event.pk %}">
-      {% csrf_token %}
-      <button class="btn btn-secondary" type="submit">{% translate "Marquer terminé" %}</button>
-    </form>
-    {% endif %}
+    {% if event.event_type == 'hearing' %}
+    <a class="btn btn-secondary" href="{% url 'hearings:update' event.pk %}">{% translate "Modifier" %}</a>
+    {% else %}
     <a class="btn btn-secondary" href="{% url 'calendar:event_update' event.pk %}">{% translate "Modifier" %}</a>
+    {% endif %}
     <form method="post" action="{% url 'calendar:event_delete' event.pk %}" onsubmit="return confirm('{% translate "Supprimer cet événement ?" %}');">
       {% csrf_token %}
       <button class="btn btn-danger" type="submit">{% translate "Supprimer" %}</button>
@@ -77,6 +80,28 @@
         {% endif %}
       </dd>
     </div>
+    {% if event.event_type == 'hearing' %}
+    <div class="event-fact">
+      <dt>{% translate "Tribunal" %}</dt>
+      <dd>
+        {% if event.court %}
+        <span>{{ event.court }}</span>
+        {% else %}
+        <span class="event-fact-empty">—</span>
+        {% endif %}
+      </dd>
+    </div>
+    <div class="event-fact">
+      <dt>{% translate "Chambre" %}</dt>
+      <dd>
+        {% if event.chamber %}
+        <span>{{ event.chamber }}</span>
+        {% else %}
+        <span class="event-fact-empty">—</span>
+        {% endif %}
+      </dd>
+    </div>
+    {% endif %}
     <div class="event-fact">
       <dt>{% translate "Dossier" %}</dt>
       <dd>
@@ -130,6 +155,46 @@
       <dd class="event-desc">{{ event.description }}</dd>
     </div>
     {% endif %}
+    {% if event.event_type == 'hearing' and event.hearing_report %}
+    <div class="event-fact event-fact--wide">
+      <dt>{% translate "Compte-rendu" %}</dt>
+      <dd class="event-desc">{{ event.hearing_report }}</dd>
+    </div>
+    {% endif %}
   </dl>
 </section>
+
+{% if event.event_type == 'hearing' and event.hearing_status != 'held' and event.hearing_status != 'cancelled' %}
+<section class="card hearing-status-panel">
+  <header class="card-header">
+    <h2 class="card-title">{% translate "Suivi de l'audience" %}</h2>
+  </header>
+  <div class="hearing-status-actions">
+    <form method="post" action="{% url 'hearings:status' event.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="status" value="held">
+      <button class="btn btn-primary btn-sm" type="submit">{% translate "Audience tenue" %}</button>
+    </form>
+    <form method="post" action="{% url 'hearings:status' event.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="status" value="postponed">
+      <button class="btn btn-secondary btn-sm" type="submit">{% translate "Reportée" %}</button>
+    </form>
+    <form method="post" action="{% url 'hearings:status' event.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="status" value="cancelled">
+      <button class="btn btn-ghost btn-sm" type="submit">{% translate "Annulée" %}</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+{% if event.event_type == 'task' and not event.is_done %}
+<section class="card">
+  <form method="post" action="{% url 'calendar:event_done' event.pk %}">
+    {% csrf_token %}
+    <button class="btn btn-secondary" type="submit">{% translate "Marquer la tâche terminée" %}</button>
+  </form>
+</section>
+{% endif %}
 {% endblock %}

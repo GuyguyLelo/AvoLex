@@ -18,9 +18,14 @@
     {% endif %}
   </div>
   <div class="cluster">
+    {% if not is_platform_admin %}
     <a class="btn btn-secondary" href="{% url 'clients:create' %}">{% translate "Nouveau client" %}</a>
+    <a class="btn btn-secondary" href="{% url 'hearings:create' %}">{% translate "Nouvelle audience" %}</a>
     <a class="btn btn-secondary" href="{% url 'matters:create' %}">{% translate "Nouveau dossier" %}</a>
     <a class="btn btn-primary" href="{% url 'calendar:event_create' %}">{% translate "Nouvel événement" %}</a>
+    {% else %}
+    <a class="btn btn-secondary" href="{% url 'core:supervision' %}">{% translate "Supervision" %}</a>
+    {% endif %}
   </div>
 </header>
 
@@ -41,6 +46,14 @@
     <p class="kpi-label">{% translate "Dossiers actifs" %}</p>
     <p class="kpi-value">{{ stats.matters_active }} <span class="kpi-sub">/ {{ stats.matters_total }}</span></p>
     <p class="kpi-hint">{% translate "Ouverts et en cours" %}</p>
+  </a>
+  <a class="kpi-card" href="{% url 'hearings:list' %}">
+    <span class="kpi-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v3M8 6h8M6 9h12v11H6V9Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 13h6M9 16h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </span>
+    <p class="kpi-label">{% translate "Audiences à venir" %}</p>
+    <p class="kpi-value">{{ stats.hearings_upcoming }}</p>
+    <p class="kpi-hint">{% translate "Procédure" %}</p>
   </a>
   <a class="kpi-card" href="{% url 'calendar:list' %}">
     <span class="kpi-ico" aria-hidden="true">
@@ -99,6 +112,30 @@
     </ul>
     {% else %}
     <p class="text-muted">{% translate "Aucun dossier pour l'instant." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <header class="card-header">
+      <h2 class="card-title">{% translate "Prochaines audiences" %}</h2>
+      <a class="card-header-link" href="{% url 'hearings:list' %}">{% translate "Tout voir" %}</a>
+    </header>
+    {% if upcoming_hearings %}
+    <ul class="task-list">
+      {% for h in upcoming_hearings %}
+      <li>
+        <a class="list-entity" href="{% url 'calendar:event_detail' h.pk %}">
+          <span class="avatar avatar-hearing" aria-hidden="true">{{ h.starts_at|date:"d" }}</span>
+          <span class="list-entity-text">
+            <span class="list-entity-title">{{ h.title }}</span>
+            <span class="list-entity-meta">{{ h.starts_at|date:'d/m H:i' }}{% if h.matter %} · {{ h.matter.reference }}{% endif %}{% if h.court %} · {{ h.court }}{% endif %}</span>
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-muted">{% translate "Aucune audience planifiée." %}</p>
     {% endif %}
   </section>
 

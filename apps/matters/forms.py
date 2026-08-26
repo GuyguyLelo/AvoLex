@@ -10,6 +10,7 @@ from django.db.models import QuerySet
 from django.utils.translation import gettext_lazy as _
 
 from apps.clients.models import Client
+from apps.core.kinshasa_courts import court_choices_with_value
 from apps.matters.models import Matter, MatterStatus
 
 User = get_user_model()
@@ -17,6 +18,13 @@ User = get_user_model()
 
 class MatterForm(forms.ModelForm):
     """Création / édition d'un dossier."""
+
+    jurisdiction = forms.ChoiceField(
+        label=_("juridiction"),
+        required=False,
+        choices=[],
+        widget=forms.Select(attrs={"class": "form-input"}),
+    )
 
     class Meta:
         model = Matter
@@ -40,7 +48,6 @@ class MatterForm(forms.ModelForm):
             "practice_area": forms.TextInput(
                 attrs={"class": "form-input", "placeholder": _("Ex. droit du travail")}
             ),
-            "jurisdiction": forms.TextInput(attrs={"class": "form-input"}),
             "opposing_party": forms.TextInput(attrs={"class": "form-input"}),
             "status": forms.Select(attrs={"class": "form-input"}),
             "responsible_lawyer": forms.Select(attrs={"class": "form-input"}),
@@ -62,3 +69,5 @@ class MatterForm(forms.ModelForm):
         if lawyer_queryset is not None:
             self.fields["responsible_lawyer"].queryset = lawyer_queryset
         self.fields["status"].choices = MatterStatus.choices
+        current_jurisdiction = (self.instance.jurisdiction if self.instance.pk else "") or ""
+        self.fields["jurisdiction"].choices = court_choices_with_value(current_jurisdiction)
