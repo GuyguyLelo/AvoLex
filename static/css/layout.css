@@ -138,6 +138,23 @@ body.app-body {
   font-weight: 650;
 }
 
+.app-sidebar-logout {
+  margin-top: var(--space-3);
+}
+
+.app-sidebar-logout .btn {
+  width: 100%;
+  justify-content: flex-start;
+  color: rgb(232 210 180 / 92%);
+  border-color: rgb(255 255 255 / 12%);
+}
+
+.app-sidebar-logout .btn:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 8%);
+  border-color: rgb(255 255 255 / 22%);
+}
+
 .app-backdrop {
   position: fixed;
   inset: 0;

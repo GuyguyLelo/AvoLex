@@ -48,18 +48,24 @@
   <div class="dropdown" data-dropdown>
     <button
       type="button"
-      class="btn btn-ghost btn-sm"
+      class="btn btn-ghost btn-sm app-user-menu-btn"
       data-dropdown-button
       aria-expanded="false"
       aria-haspopup="true"
+      aria-controls="user-menu"
     >
-      {{ user.get_short_name|default:user.email }}
+      <span class="app-user-avatar" aria-hidden="true">{{ user.get_short_name|default:user.email|slice:":1"|upper }}</span>
+      <span class="app-user-label">{{ user.get_short_name|default:user.email }}</span>
+      <span class="app-user-caret" aria-hidden="true">▾</span>
     </button>
-    <div class="dropdown-menu" data-dropdown-menu hidden role="menu">
-      <a href="{% url 'tenants:invite' %}" role="menuitem">{% translate "Inviter" %}</a>
+    <div class="dropdown-menu" id="user-menu" data-dropdown-menu hidden role="menu">
+      <p class="dropdown-meta" role="presentation">{{ user.email }}</p>
+      {% if not is_platform_admin %}
+      <a href="{% url 'tenants:invite' %}" role="menuitem">{% translate "Inviter un collaborateur" %}</a>
+      {% endif %}
       <form method="post" action="{% url 'accounts:logout' %}">
         {% csrf_token %}
-        <button type="submit" role="menuitem">{% translate "Se déconnecter" %}</button>
+        <button type="submit" class="dropdown-logout" role="menuitem">{% translate "Se déconnecter" %}</button>
       </form>
     </div>
   </div>

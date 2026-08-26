@@ -43,3 +43,6 @@ def test_app_shell_has_sidebar_and_topbar(client) -> None:
     assert "app-topbar" in content
     assert "data-sidebar-toggle" in content
     assert "js/main.js" in content
+    assert "accounts:logout" in content or "/accounts/logout/" in content
+    assert "Se déconnecter" in content
+    assert "data-dropdown-button" in content

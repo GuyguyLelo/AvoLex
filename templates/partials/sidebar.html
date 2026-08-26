@@ -51,5 +51,9 @@
     {% elif current_membership %}
       <p>{{ current_membership.get_role_display }}</p>
     {% endif %}
+    <form class="app-sidebar-logout" method="post" action="{% url 'accounts:logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost btn-sm">{% translate "Se déconnecter" %}</button>
+    </form>
   </div>
 </aside>
