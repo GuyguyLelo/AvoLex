@@ -10,7 +10,7 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env(
-    DEBUG=(bool, False),
+    DEBUG=(bool, True),
     ALLOWED_HOSTS=(list, []),
     USE_X_FORWARDED_HOST=(bool, False),
     SECURE_SSL_REDIRECT=(bool, False),
@@ -135,25 +135,28 @@ LOCALE_PATHS = [BASE_DIR / "locale"]
 
 DEFAULT_CURRENCY = "USD"
 
-STATIC_URL = "/static/"
+STATIC_URL = "/avolex/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Configuration des fichiers statiques - SIMPLE
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
-# Documents hors webroot — jamais servis directement par le serveur web
+# Documents hors webroot
 MEDIA_URL = ""
 MEDIA_ROOT = BASE_DIR / "private_media"
 DOCUMENTS_MAX_UPLOAD_BYTES = env.int("DOCUMENTS_MAX_UPLOAD_BYTES", default=20 * 1024 * 1024)
 BILLING_DEFAULT_HOURLY_RATE = env("BILLING_DEFAULT_HOURLY_RATE", default="250.00")
 BILLING_DEFAULT_TAX_RATE = env("BILLING_DEFAULT_TAX_RATE", default="20.00")
-# weasyprint | stub | auto (stub si libs système absentes en DEBUG)
 BILLING_PDF_BACKEND = env("BILLING_PDF_BACKEND", default="weasyprint")
 
 REST_FRAMEWORK = {
@@ -170,7 +173,7 @@ REST_FRAMEWORK = {
 CELERY_BEAT_SCHEDULE = {
     "send-due-event-reminders": {
         "task": "apps.calendar_app.tasks.send_due_event_reminders",
-        "schedule": 300.0,  # toutes les 5 minutes
+        "schedule": 300.0,
     },
 }
 
@@ -205,20 +208,17 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 60 * 5
 
-# django-axes (rate limiting auth)
 AXES_FAILURE_LIMIT = env("AXES_FAILURE_LIMIT")
 AXES_COOLOFF_TIME = env("AXES_COOLOFF_TIME")
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 AXES_RESET_ON_SUCCESS = True
 
-# Cookies / sessions
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_HTTPONLY = False  # requis pour lecture éventuelle côté JS (formulaires)
+CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_AGE = 60 * 60 * 12
 
-# CSP (django-csp) — durci davantage en prod
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
@@ -266,26 +266,12 @@ LOGGING = {
 SITE_NAME = "AvoLex"
 
 
+
+
+
 def require_setting(name: str) -> str:
     """Retourne une variable d'env obligatoire ou lève ImproperlyConfigured."""
     value: str = env.str(name, default="")
     if not value:
         raise ImproperlyConfigured(f"La variable d'environnement {name} est obligatoire.")
     return value
-
-# Configuration du sous-chemin (ajouté pour /avolex/)
-FORCE_SCRIPT_NAME = env.str("FORCE_SCRIPT_NAME", default="")
-if FORCE_SCRIPT_NAME:
-    # Ajuster STATIC_URL et MEDIA_URL pour le sous-chemin
-    STATIC_URL = f"{FORCE_SCRIPT_NAME}/static/"
-    MEDIA_URL = f"{FORCE_SCRIPT_NAME}/media/"
-else:
-    STATIC_URL = "/static/"
-    MEDIA_URL = "/media/"
-
-# Configuration des fichiers statiques et médias
-#STATIC_URL = "/avolex/static/"
-#STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
-#MEDIA_URL = "/avolex/media/"
-MEDIA_ROOT = BASE_DIR / "private_media"

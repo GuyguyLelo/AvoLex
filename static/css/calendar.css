@@ -1,0 +1,231 @@
+/* AvoLex — fiche événement agenda */
+
+.event-info {
+  margin-bottom: var(--space-8);
+}
+
+.event-facts {
+  display: grid;
+  gap: var(--space-5) var(--space-6);
+  margin: 0;
+}
+
+.event-fact {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.event-fact dt {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.event-fact dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 550;
+  color: var(--color-ink-900);
+  line-height: 1.4;
+}
+
+.event-fact .list-entity {
+  padding: 0.1rem 0;
+}
+
+.event-fact-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.event-fact-empty {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.event-fact--wide {
+  grid-column: 1 / -1;
+}
+
+.event-desc {
+  max-width: 42rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg-muted);
+  color: var(--color-slate-700);
+  font-weight: 500;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.event-datetime {
+  display: grid;
+  gap: 0.15rem;
+}
+
+@media (min-width: 700px) {
+  .event-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .event-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* —— Module Audiences —— */
+.hearings-kicker {
+  margin: 0 0 var(--space-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-brass-600);
+}
+
+.hearings-page-header {
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  background:
+    radial-gradient(ellipse 70% 120% at 100% 0%, rgb(180 40 40 / 6%), transparent 55%),
+    linear-gradient(180deg, rgb(255 255 255 / 55%), transparent);
+}
+
+.hearings-toolbar {
+  margin-bottom: var(--space-4);
+}
+
+.hearings-table-wrap {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+.hearings-table thead th {
+  background: var(--color-ink-900);
+  color: #e8eef5;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hearings-table tbody tr:hover {
+  background: rgb(180 40 40 / 4%);
+}
+
+.hearing-cell-muted {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.avatar-hearing {
+  background: linear-gradient(145deg, #8b1e1e, var(--color-ink-900));
+  color: #fff;
+}
+
+.hearing-form {
+  max-width: 72rem;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.hearing-form-panels {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.hearing-form .form-panel {
+  position: relative;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(165deg, #fff 0%, var(--color-paper) 160%);
+  box-shadow: var(--shadow-sm);
+}
+
+.hearing-form .form-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  background: linear-gradient(180deg, #b42318, var(--color-ink-800));
+}
+
+.hearing-form .form-panel-head h2 {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+}
+
+.hearing-form .form-panel-head p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.hearing-form .form-grid {
+  display: grid;
+  gap: var(--space-3) var(--space-4);
+  grid-template-columns: 1fr;
+}
+
+.hearing-form .form-field-span {
+  grid-column: 1 / -1;
+}
+
+.hearing-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+}
+
+.hearing-status-panel {
+  margin-top: var(--space-6);
+}
+
+.hearing-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.matter-hearings {
+  margin-bottom: var(--space-6);
+}
+
+@media (min-width: 900px) {
+  .hearing-form-panels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .hearing-form .form-panel-full {
+    grid-column: 1 / -1;
+  }
+
+  .hearing-form .form-panel:not(.form-panel-full) .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 640px) {
+  .hearing-form .form-panel-full .form-grid,
+  .hearing-form .form-panel:not(.form-panel-full) .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from .base import *  # noqa: F403
 
-DEBUG = False
+DEBUG = True
 SECRET_KEY = "test-secret-key-not-for-production"
 
 # PostgreSQL de test via DATABASE_URL ; fallback sqlite uniquement si forcé
